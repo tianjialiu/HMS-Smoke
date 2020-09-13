@@ -1,5 +1,6 @@
 /**** Start of imports. If edited, may not auto-convert in the playground. ****/
-var goes16F = ee.ImageCollection("NOAA/GOES/16/MCMIPF");
+var firms = ee.ImageCollection("FIRMS"),
+    maiac = ee.ImageCollection("MODIS/006/MCD19A2_GRANULES");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 // *****************************************************************
 // =================================================================
@@ -8,7 +9,7 @@ var goes16F = ee.ImageCollection("NOAA/GOES/16/MCMIPF");
 // *****************************************************************
 /*
 // @author Tianjia Liu (tianjialiu@g.harvard.edu)
-// Last updated: August 15, 2020
+// Last updated: September 12, 2020
 
 // Purpose: visualize HMS smoke with MODIS active fires
 // and aerosol optical depth
@@ -23,7 +24,23 @@ var baseMap = require('users/tl2581/packages:baseMap.js');
 var colPal = require('users/tl2581/packages:colorPalette.js');
 
 var projFolder = 'projects/GlobalFires/';
-var sYear = 2005; var eYear = 2019;
+
+var sYear = 2005;
+var eYear = 2019;
+var nrtYear = eYear + 1;
+var nrtEnd = '2020-09-12';
+var maiacEnd = 'Aug 15, 2020';
+
+var region = ee.Geometry.Rectangle([-180,0,0,90],null,false);
+maiac = maiac.filterBounds(region);
+
+// var firmsEnd = ee.Date(firms.filter(ee.Filter.gte('system:time_start',ee.Date('2020-09-09').millis()))
+//   .aggregate_max('system:time_start'));
+// print(firmsEnd);
+
+// var maiacEnd = ee.Date(maiac.filter(ee.Filter.gt('system:time_start',ee.Date('2020-08-15').millis()))
+//   .aggregate_max('system:time_start')).format('MMM d, Y');
+// print(maiacEnd);
 
 // filter HMS smoke
 var smokeLabels = ['Unspecified','Light','Medium','Heavy'];
@@ -53,12 +70,15 @@ var getHMS = function(year,month,day) {
 
 // filter MODIS active fires
 var getFire = function(year,month,day) {
-  var mcd14mlYr = ee.FeatureCollection(projFolder + 'MCD14ML/MCD14ML_'
-    + year + '_' + month.format('%02d').getInfo());
-  var yyyymmdd = ee.Number(year).multiply(1e4).add(ee.Number(month).multiply(1e2)).add(ee.Number(day));
+  var sDate = ee.Date.fromYMD(year,month,day);
+  var eDate = sDate.advance(1,'day');
   
-  return mcd14mlYr.filter(ee.Filter.eq('YYYYMMDD',yyyymmdd))
-    .filter(ee.Filter.eq('type',0));
+  var firmsDay = firms.filterDate(sDate,eDate).first().select('T21').toInt().selfMask()
+    .reduceToVectors({geometryType: 'centroid',
+      eightConnected: false, geometry: region,
+       bestEffort: true, maxPixels: 1e10});
+  
+  return firmsDay;
 };
 
 // filter MODIS AOD
@@ -69,14 +89,27 @@ var aodBands = {
 
 var getAOD = function(year,month,day,band) {
   var inDate = ee.Date.fromYMD(year,month,day);
-  var modisAODday = ee.ImageCollection('MODIS/006/MCD19A2_GRANULES')
-    .filterDate(inDate,inDate.advance(1,'day'))
-    .select(aodBands[band]).median().multiply(0.001);
   
-  return modisAODday;
+  var modisAODgranules = maiac.select(aodBands[band])
+    .filterDate(inDate,inDate.advance(1,'day'));
+  
+  var modisAODday = ee.Algorithms.If(modisAODgranules.size().gt(0),
+    modisAODgranules.median().multiply(0.001),ee.Image(0).selfMask());
+  
+  return ee.Image(modisAODday);
 };
 
 // filter and calculate GOES RGB
+var goesRGB_ID = {
+  'GOES-16/East': 'NOAA/GOES/16/MCMIPF',
+  'GOES-17/West': 'NOAA/GOES/17/MCMIPF',
+};
+
+var goesFire_ID = {
+  'GOES-16/East': 'NOAA/GOES/16/FDCF',
+  'GOES-17/West': 'NOAA/GOES/17/FDCF'
+};
+
 var applyScaleAndOffset = function(image,bandName) {
   var scale = ee.Number(image.get(bandName + '_scale'));
   var offset = ee.Number(image.get(bandName + '_offset'));
@@ -84,9 +117,10 @@ var applyScaleAndOffset = function(image,bandName) {
   return image.select(bandName).multiply(scale).add(offset);
 };
 
-var filterGOESday = function(year,month,day) {
+var filterGOESday = function(satName,year,month,day) {
   var inDate = ee.Date.fromYMD(year,month,day);
-  var goesDay = goes16F.filterDate(inDate,inDate.advance(1,'day'));
+  var goesDay = ee.ImageCollection(goesRGB_ID[satName])
+    .filterDate(inDate,inDate.advance(1,'day'));
   
   var goesHr = goesDay.filter(ee.Filter.calendarRange(0,5,'hour'))
     .merge(goesDay.filter(ee.Filter.calendarRange(11,23,'hour')));
@@ -98,30 +132,41 @@ var filterGOESday = function(year,month,day) {
   return goesHr;
 };
 
-var getGOESdates = function(year,month,day) {
+var getGOESdates = function(satName,year,month,day) {
   
-  var goes_dates = filterGOESday(year,month,day).toList(50).map(function(image) {
+  var goes_dates = filterGOESday(satName,year,month,day).toList(50).map(function(image) {
     return ee.String(ee.Date(ee.Image(image).get('system:time_start'))
-    .format('Y-MM-dd HH:mm'));
+      .format('Y-MM-dd HH:mm'));
   });
   
   return goes_dates;
 };
 
-var getGOESrgb = function(dateTime) {
+var getGOESrgb = function(satName,dateTime) {
   dateTime = ee.Date.parse({format: 'Y-MM-dd HH:mm',date: dateTime});
-  var goesHr = goes16F.filterDate(dateTime,dateTime.advance(1,'hour')).first();
+  var goesHr = ee.ImageCollection(goesRGB_ID[satName])
+    .filterDate(dateTime,dateTime.advance(1,'hour')).first();
     
   var red = applyScaleAndOffset(goesHr,'CMI_C02').rename('RED');
   var blue = applyScaleAndOffset(goesHr,'CMI_C01').rename('BLUE');
   var veggie = applyScaleAndOffset(goesHr,'CMI_C03').rename('VEGGIE');
   
+  // Bah, Gunshor, Schmit, Generation of GOES-16 True Color Imagery without a
+  // Green Band, 2018. https://doi.org/10.1029/2018EA000379
+  // Green = 0.45 * Red + 0.10 * NIR + 0.45 * Blue
   var green1 = red.multiply(0.4);
   var green2 = veggie.multiply(0.1);
   var green3 = blue.multiply(0.45);
   var green = green1.add(green2).add(green3).rename('GREEN');
   
-  return red.addBands(green).addBands(blue);
+  var goesRGB = red.addBands(green).addBands(blue);
+  
+  var goesFire = ee.ImageCollection(goesFire_ID[satName])
+    .filterDate(dateTime,dateTime.advance(1,'hour')).first()
+    .select('DQF').eq(0).selfMask();
+    
+  return goesRGB.visualize({min:0, max:0.6, gamma: 1.25})
+    .blend(goesFire.visualize({palette: 'red', opacity: 0.4}));
 };
 
 // Extent of smoke plume statistics
@@ -277,7 +322,7 @@ var viewPanel = function() {
   var viewSelect = ui.Select({
     items: ['By Day','By Year','Summary'],
     value: 'By Day',
-    style: {margin: '3px 100px 5px 8px', stretch: 'horizontal'}
+    style: {margin: '3px 75px 5px 8px', stretch: 'horizontal'}
   });
   
   var viewPanel = ui.Panel([viewInfoLabel, viewSelect], ui.Panel.Layout.Flow('horizontal'),
@@ -288,7 +333,7 @@ var viewPanel = function() {
       if (selected == 'By Day') {setTimePanel('By Day')}
       if (selected == 'By Year') {setTimePanel('By Year')}
       if (selected == 'Summary') {
-        timeModePanel.add(ui.Label('Note: 2005 is not included in the summary due to partial data availability.',
+        timeModePanel.add(ui.Label('Note: 2005 & 2020 are not included in the summary due to partial data availability.',
           {fontSize: '12.5px', margin: '5px 8px 8px 8px', color: '#777'}));
       }
     });
@@ -308,11 +353,12 @@ var setTimePanel = function(viewMode) {
   
   var yearLabel = ui.Label('2) Select Year:', {fontSize: '14.5px', margin: '8px 8px 8px 8px'});
   var yearSlider = ui.Slider({min: sYear, max: eYear, value: 2017, step: 1});
+  if (viewMode == 'By Day') {yearSlider.setMax(nrtYear);}
   yearSlider.style().set('stretch', 'horizontal');
   var yearPanel = ui.Panel([yearLabel, yearSlider], ui.Panel.Layout.Flow('horizontal'), {stretch: 'horizontal'});
   
   var dateLabel = ui.Label('3) Select Date:', {fontSize: '14.5px', margin: '12px 8px 8px 8px'});
-  var dateSlider = ui.DateSlider({start: '2017-01-01', end: '2017-12-31', value: '2017-08-01'});
+  var dateSlider = ui.DateSlider({start: '2017-01-01', end: '2018-01-01', value: '2017-08-01'});
   dateSlider.style().set('stretch', 'horizontal');
   var datePanel = ui.Panel([dateLabel, dateSlider], ui.Panel.Layout.Flow('horizontal'), {stretch: 'horizontal'});
   
@@ -320,13 +366,18 @@ var setTimePanel = function(viewMode) {
   
   if (viewMode == 'By Day') {
     yearSlider.onChange(function(inYear) {
-      var startDate = ee.Date.fromYMD(inYear,1,1).format('Y-MM-ddd').getInfo();
-      var endDate = ee.Date.fromYMD(inYear,12,31).format('Y-MM-ddd').getInfo();
-      var inDate = ee.Date.fromYMD(inYear,8,1).format('Y-MM-ddd').getInfo();
+      var startDate = ee.Date.fromYMD(inYear,1,1).format('Y-MM-dd').getInfo();
+      var endDate = ee.Date.fromYMD(ee.Number(inYear).add(1),1,1).format('Y-MM-dd').getInfo();
+      var inDate = ee.Date.fromYMD(inYear,8,1).format('Y-MM-dd').getInfo();
       
       if (inYear == sYear) {
-        startDate = ee.Date.fromYMD(inYear,8,5).format('Y-MM-ddd').getInfo();
+        startDate = ee.Date.fromYMD(inYear,8,5).format('Y-MM-dd').getInfo();
         inDate = startDate;
+      }
+      
+      if (inYear == nrtYear) {
+        endDate = nrtEnd;
+        inDate = endDate;
       }
       
       dateSlider = ui.DateSlider({start: startDate, end: endDate, value: inDate});
@@ -336,7 +387,16 @@ var setTimePanel = function(viewMode) {
       datePanel.insert(1, dateSlider);
     });
     
-    timePanel = ui.Panel([dateInfoLabel,yearPanel,datePanel]);
+    var satLabel = ui.Label('4) Select Satellite:', {fontSize: '14.5px', margin: '8px 8px 8px 8px'});
+    var satSelect = ui.Select({
+      items: ['GOES-16/East','GOES-17/West'],
+      value: 'GOES-16/East',
+      style: {margin: '3px 75px 5px 8px', stretch: 'horizontal'}
+    });
+
+    var satPanel = ui.Panel([satLabel, satSelect], ui.Panel.Layout.Flow('horizontal'), {stretch: 'horizontal'});
+
+    timePanel = ui.Panel([dateInfoLabel,yearPanel,datePanel,satPanel]);
   }
   
   return timeModePanel.add(timePanel);
@@ -355,6 +415,12 @@ var getYear = function(timeModePanel,viewMode) {
   } else {
     return null;
   }
+};
+
+var getSat = function(timeModePanel) {
+  var satName = timeModePanel.widgets().get(0).widgets().get(3).widgets().get(1).getValue();
+
+  return satName;
 };
 
 // Run button
@@ -497,7 +563,8 @@ var getLegend = function(map) {
       getLayerCheck(map,symbol.fire + ' Active Fires', true, 3, 0.65,
         'Active fires detected by MODIS aboard the Terra and Aqua satellites', '6px'),
       ui.Label('Aerosol Optical Depth',{fontWeight:'bold',fontSize:'16px',margin:'2px 3px 0px 8px'}),
-      ui.Label('MODIS Terra/Aqua MAIAC Aerosol Optical Depth (AOD)',{fontSize:'13px',color:'#666',margin:'2px 3px 8px 8px'}),
+      ui.Label('MODIS Terra/Aqua MAIAC Aerosol Optical Depth (AOD)',{fontSize:'13px',color:'#666',margin:'2px 3px 2px 8px'}),
+      ui.Label('Note: AOD not yet updated past ' + maiacEnd,{fontSize:'13px',color:'#999',margin:'0px 3px 8px 8px'}),
       getLayerCheckSimple(map,'0.55 μm (Green)', false, 0, 0.75),
       getLayerCheckSimple(map,'0.47 μm (Blue)', false, 1, 0.75),
       getLegendContinuous(0.5,colPal.Spectral)
@@ -522,7 +589,7 @@ var getLegendYr = function(map) {
         'Number of days with at least one HMS observation', '1px'),
       ui.Label('',{margin:'-8px 0 0 0'}),
       getLegendContinuous(70,colPal.Grays),
-      getLayerCheck(map,'Maximum Smoke Duration', false, 1, 0.75,
+      getLayerCheck(map,'Maximum Smoke \'Duration\'', false, 1, 0.75,
         'Maximum smoke duration, in hours, indicated by the start and end times of satellite images used to outline smoke polygons', '2px'),
       ui.Label('',{margin:'-8px 0 0 0'}),
       getLegendContinuous(500,colPal.Sunset),
@@ -615,7 +682,8 @@ runButton.onClick(function() {
     var inDate = getDate(timeModePanel);
     var inMonth = inDate.get('month');
     var inDay = inDate.get('day');
-    
+    var satName = getSat(timeModePanel);
+   
     var hmsDay = getHMS(inYear,inMonth,inDay);
     var fireDay = getFire(inYear,inMonth,inDay);
     var aodDay550 = getAOD(inYear,inMonth,inDay,'green');
@@ -630,7 +698,7 @@ runButton.onClick(function() {
       'HMS Smoke',true,0.6);
     map0.addLayer(fireDay.style({color:'red',pointSize:1,width:0.7}),{},
       'Active Fires',true,0.65);
-    
+
     // Legend:
     var legendPanel = getLegend(map0);
     controlPanel.add(legendPanel);
@@ -639,8 +707,8 @@ runButton.onClick(function() {
     var smokeText = getSmokeText(inYear,inMonth,inDay);
     map0.add(smokeStats); map0.add(smokeText);
     
-    var goesDates = getGOESdates(inYear,inMonth,inDay);
-    var satCheckbox = ui.Checkbox({label: 'See GOES-East RGB Images',
+    var goesDates = getGOESdates(satName,inYear,inMonth,inDay);
+    var satCheckbox = ui.Checkbox({label: 'See ' + satName + ' RGB Images',
       style: {fontSize: '14.5px', position: 'bottom-left'}});
     var satMessage = ui.Label('* Available from July 10, 2017 to present',
       {fontSize: '11px', margin: '0 8px 8px 8px', color: '#777'});
@@ -665,6 +733,10 @@ runButton.onClick(function() {
       
       if (checked) {
         mapPanel.clear();
+        smokeStats = getSmokeStats(inYear,inMonth,inDay);
+        smokeText = getSmokeText(inYear,inMonth,inDay);
+        map0.add(smokeStats); map0.add(smokeText);
+        
         var map_panels = ui.SplitPanel({
           firstPanel: map0,
           secondPanel: map1,
@@ -677,10 +749,10 @@ runButton.onClick(function() {
         map1.setControlVisibility({mapTypeControl: false, fullscreenControl: false});
         
         var goesRGBcol = ee.ImageCollection(goesDates.map(function(dateTime) {
-            return getGOESrgb(dateTime);
+            return getGOESrgb(satName,dateTime);
           }));
           
-        var goesLabel = ui.Label('GOES-EAST RGB Images', {fontSize: '14.5px', margin: '0 0 6px 0', fontWeight: 'bold'});
+        var goesLabel = ui.Label(satName + ' RGB Images', {fontSize: '14.5px', margin: '0 0 6px 0', fontWeight: 'bold'});
         var hrLabel = ui.Label('Select Date/HH:MM (UTC):', {fontSize: '14.5px', margin: '0 8px 0 0'});
         var hrSelect = ui.Select({items: goesDates.getInfo(), placeholder: 'Select a timestamp',
           value: goesDates.get(0).getInfo(),
@@ -704,9 +776,9 @@ runButton.onClick(function() {
           }
           
           var inDateTime = hrSelect.getValue();
-          var goesRGB = getGOESrgb(inDateTime);
+          var goesRGB = getGOESrgb(satName,inDateTime);
           
-          var goesLayer = ui.Map.Layer(goesRGB,{min:0, max:0.6, gamma: 1.25},'RGB',true,1);
+          var goesLayer = ui.Map.Layer(goesRGB,{},'RGB',true,1);
           map1.layers().set(0, goesLayer);
           
           var zoomBox = ui.Panel({style: {margin: '0'}});
@@ -737,8 +809,8 @@ runButton.onClick(function() {
           var centerZoomBox = function(lon, lat) {
             instructions.style().set('shown', false);
 
-            var w = lon-3, e = lon+3;
-            var n = lat-2, s = lat+2;
+            var w = lon-4, e = lon+4;
+            var n = lat-3, s = lat+3;
             var outline = ee.Geometry.MultiLineString([
               [[w, s], [w, n]],
               [[e, s], [e, n]],
@@ -753,9 +825,6 @@ runButton.onClick(function() {
               dimensions: 512,
               region: region,
               framesPerSecond: 5,
-              min: 0,
-              max: 0.6,
-              gamma: 1.25,
               crs: 'EPSG:3857',
             };
             
@@ -798,7 +867,7 @@ runButton.onClick(function() {
     var chartStatsTitle = ui.Label('Smoke Statistics', {fontSize: '18px', fontWeight: 'bold', margin: '3px 3px 0px 8px'});
     var chartStatsInfo = ui.Label('(Click on map...)', {fontSize: '14px', color: '#666', margin: '8px 3px 0px 8px'});
     var chartDaysTitle = ui.Label('Smoke Days', {fontSize: '18px', fontWeight: 'bold', margin: '3px 3px 0px 8px'});
-    var chartHrsTitle = ui.Label('Max Smoke Duration', {fontSize: '18px', fontWeight: 'bold', margin: '3px 3px 0px 8px'});
+    var chartHrsTitle = ui.Label('Max Smoke \'Duration\'', {fontSize: '18px', fontWeight: 'bold', margin: '3px 3px 0px 8px'});
     chartHrsPanel.add(chartStatsTitle).add(chartStatsInfo);
     
     map0.onClick(function(coords) {
@@ -933,7 +1002,7 @@ runButton.onClick(function() {
         .setSeriesNames(smokeLabels)
         .setChartType('ColumnChart')
         .setOptions({
-          title: 'Maximum Smoke Duration',
+          title: 'Maximum Smoke \'Duration\'',
           titleTextStyle: {fontSize: '13.5'},
           isStacked: true,
           fontSize: '12',
