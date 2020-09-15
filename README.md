@@ -12,7 +12,8 @@ The [HMS Smoke Explorer](https://globalfires.earthengine.app/view/hms-smoke) all
 | [FIRMS/MODIS Active Fires](https://developers.google.com/earth-engine/datasets/catalog/FIRMS) | 2000/10-present | 1 km |
 | [MODIS Burned Area](https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD64A1) | 2000/10-present | 500 m |
 | [MODIS MAIAC Aerosol Optical Depth (AOD)](https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD19A2_GRANULES) | 2000/02-present | 1 km |
-| [GOES-16/17](https://developers.google.com/earth-engine/datasets/tags/goes) | 2017/07-present | 2 km |
+| [GOES-16/East](https://developers.google.com/earth-engine/datasets/tags/goes-16) | 2017/07-present | 2 km |
+| [GOES-16/West](https://developers.google.com/earth-engine/datasets/tags/goes-17) | 2018/12-present | 2 km |
 
 ### Updates
 * September 2020: updated HMS to 2020, added option to select GOES-East or GOES-West full disk imagery

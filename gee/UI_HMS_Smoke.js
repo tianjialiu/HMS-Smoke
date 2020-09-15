@@ -9,7 +9,7 @@ var firms = ee.ImageCollection("FIRMS"),
 // *****************************************************************
 /*
 // @author Tianjia Liu (tianjialiu@g.harvard.edu)
-// Last updated: September 12, 2020
+// Last updated: September 14, 2020
 
 // Purpose: visualize HMS smoke with MODIS active fires
 // and aerosol optical depth
@@ -28,23 +28,27 @@ var projFolder = 'projects/GlobalFires/';
 var sYear = 2005;
 var eYear = 2019;
 var nrtYear = eYear + 1;
-var nrtEnd = '2020-09-12';
+var nrtEnd = '2020-09-14';
 var maiacEnd = 'Aug 15, 2020';
 
 var region = ee.Geometry.Rectangle([-180,0,0,90],null,false);
 maiac = maiac.filterBounds(region);
 
-// var firmsEnd = ee.Date(firms.filter(ee.Filter.gte('system:time_start',ee.Date('2020-09-09').millis()))
-//   .aggregate_max('system:time_start'));
-// print(firmsEnd);
-
-// var maiacEnd = ee.Date(maiac.filter(ee.Filter.gt('system:time_start',ee.Date('2020-08-15').millis()))
-//   .aggregate_max('system:time_start')).format('MMM d, Y');
-// print(maiacEnd);
-
 // filter HMS smoke
 var smokeLabels = ['Unspecified','Light','Medium','Heavy'];
 var colPal_smoke = ['#000000','#E7D516','#DAA520','#964B00'];
+
+var hmsCatList = {
+  'Unspecified': 0,
+  'Light': 5,
+  'Medium': 16,
+  'Heavy': 27
+};
+
+var applyHMScolor = function(hmsDay,hmsCat,hmsColor) {
+  return hmsDay.filter(ee.Filter.eq('Density',hmsCatList[hmsCat]))
+    .map(function(x) {return x.set('styleProperty', ee.Dictionary({'color': hmsColor}))});
+};
 
 var getHMS = function(year,month,day) {
   var hmsYr = ee.FeatureCollection(projFolder + 'HMS/HMS_' + year);
@@ -52,18 +56,11 @@ var getHMS = function(year,month,day) {
   var hmsDay = hmsYr.filter(ee.Filter.eq('Month',month))
     .filter(ee.Filter.eq('Day',day));
   
-  var hmsDayUnSpec = hmsDay.filter(ee.Filter.eq('Density',0))
-    .map(function(x) {return x.set('styleProperty', ee.Dictionary({'color': colPal_smoke[0]}))});
+  var hmsDayUnSpec = applyHMScolor(hmsDay,'Unspecified',colPal_smoke[0]);
+  var hmsDayLight = applyHMScolor(hmsDay,'Light',colPal_smoke[1]);
+  var hmsDayMedium = applyHMScolor(hmsDay,'Medium',colPal_smoke[2]);
+  var hmsDayHeavy = applyHMScolor(hmsDay,'Heavy',colPal_smoke[3]);
   
-  var hmsDayLight = hmsDay.filter(ee.Filter.eq('Density',5))
-    .map(function(x) {return x.set('styleProperty', ee.Dictionary({'color': colPal_smoke[1]}))});
-
-  var hmsDayMedium = hmsDay.filter(ee.Filter.eq('Density',16))
-    .map(function(x) {return x.set('styleProperty', ee.Dictionary({'color': colPal_smoke[2]}))});
-  
-  var hmsDayHeavy = hmsDay.filter(ee.Filter.eq('Density',27))
-    .map(function(x) {return x.set('styleProperty', ee.Dictionary({'color': colPal_smoke[3]}))});
-
   return hmsDayUnSpec.merge(hmsDayLight)
     .merge(hmsDayMedium).merge(hmsDayHeavy);
 };
@@ -102,12 +99,17 @@ var getAOD = function(year,month,day,band) {
 // filter and calculate GOES RGB
 var goesRGB_ID = {
   'GOES-16/East': 'NOAA/GOES/16/MCMIPF',
-  'GOES-17/West': 'NOAA/GOES/17/MCMIPF',
+  'GOES-17/West': 'NOAA/GOES/17/MCMIPF'
 };
 
 var goesFire_ID = {
   'GOES-16/East': 'NOAA/GOES/16/FDCF',
   'GOES-17/West': 'NOAA/GOES/17/FDCF'
+};
+
+var goes_sDate = {
+  'GOES-16/East': 'July 17, 2017',
+  'GOES-17/West': 'December 4, 2018'
 };
 
 var applyScaleAndOffset = function(image,bandName) {
@@ -122,7 +124,7 @@ var filterGOESday = function(satName,year,month,day) {
   var goesDay = ee.ImageCollection(goesRGB_ID[satName])
     .filterDate(inDate,inDate.advance(1,'day'));
   
-  var goesHr = goesDay.filter(ee.Filter.calendarRange(0,5,'hour'))
+  var goesHr = goesDay.filter(ee.Filter.calendarRange(0,3,'hour'))
     .merge(goesDay.filter(ee.Filter.calendarRange(11,23,'hour')));
     
   goesHr = goesHr.filter(ee.Filter.calendarRange(0,0,'minute'))
@@ -169,62 +171,66 @@ var getGOESrgb = function(satName,dateTime) {
     .blend(goesFire.visualize({palette: 'red', opacity: 0.4}));
 };
 
-// Extent of smoke plume statistics
+// HMS extent
+var hmsExtent = ee.FeatureCollection(projFolder + 'HMS/HMS_Extent');
+
 var getSmokeStats = function(year,month,day) {
-  var hmsYr = ee.FeatureCollection(projFolder + 'HMS/HMS_' + year);
   
-  var hmsDay = hmsYr.filter(ee.Filter.eq('Month',month))
-    .filter(ee.Filter.eq('Day',day));
-  var hmsDayCount = hmsDay.size();
-  var hmsDayArea = hmsDay.union().geometry().area().divide(1e6).round();
+  var yyyymmdd = ee.Number(year).multiply(1e4)
+    .add(ee.Number(month).multiply(1e2)).add(day);
     
+  var hmsDayExtent = hmsExtent.filter(ee.Filter.eq('YYYYMMDD',yyyymmdd));
+  
   var smokeExtentTitle = ui.Label('Smoke Extent',
     {fontWeight:'bold', fontSize: '18px', margin: '3px 8px 2px 8px'});
   
-  var smokeExtent = ui.Chart.feature.byFeature(
-    ee.Feature(null,{Date: ee.Date.fromYMD(year,month,day),
-      'Area (km²)': hmsDayArea, Count: hmsDayCount}),
-      'Date', ['Area (km²)','Count']
+  hmsDayExtent = ee.List(['Unspecified','Light','Medium','Heavy','Total'])
+    .map(function(hmsCat) {return hmsDayExtent.filter(ee.Filter.eq('Density',hmsCat)).first()});
+  hmsDayExtent = ee.FeatureCollection(hmsDayExtent);
+  
+  var smokeExtent = ui.Chart.feature.byFeature(hmsDayExtent,
+      'Density', ['Area','Count']
     ).setChartType('Table');
   
   return ui.Panel({
     widgets: [smokeExtentTitle,smokeExtent],
     style: {
       width: '250px',
-      height: '115px',
+      height: '200px',
       position: 'bottom-right'
     }
   });
 };  
 
 // HMS smoke duration
-var hmsStats = ee.ImageCollection(projFolder + 'HMS/HMS_Stats'); 
+var hmsStats = ee.ImageCollection(projFolder + 'HMS/HMS_Stats');
 
 // Time series chart for HMS smoke plumes
-var getSmokeTSChart = function(year) {
- 
-  var hmsYr = ee.FeatureCollection(projFolder + 'HMS/HMS_' + year);
+var getSmokeTSChart = function(year,hmsCat) {
   
-  var smokeYr = ee.FeatureCollection(ee.List.sequence(1,366,1).map(function(JDay) {
+  var smokeExtYr = hmsExtent.filter(ee.Filter.eq('Year',year));
+  var nDay = ee.Date.fromYMD(year,12,31)
+    .difference(ee.Date.fromYMD(year,1,1),'day').add(1);
     
-    var hmsDay = hmsYr.filter(ee.Filter.eq('JDay',JDay));
+  var smokeExt = ee.FeatureCollection(ee.List.sequence(1,nDay,1).map(function(JDay) {
     
-    var hmsDayArea = hmsDay.aggregate_sum('Area')
-      .divide(hmsDay.size());
+    var hmsDay = smokeExtYr.filter(ee.Filter.eq('JDay',JDay))
+      .filter(ee.Filter.eq('Density',hmsCat)).first();
     
     return ee.Feature(null,{JDay: JDay,
-      Date: ee.Date.fromYMD(year,1,1)
-        .advance(ee.Number(JDay).subtract(1),'day'),
-      Area: hmsDayArea});
+      Date: ee.Date.fromYMD(year,1,1).advance(ee.Number(JDay).subtract(1),'day'),
+      Area: hmsDay.getNumber('Area')});
     }));
   
-  var smokeChart = ui.Chart.feature.byFeature(smokeYr,'Date',['Area'])
+  smokeExt = smokeExt.filter(ee.Filter.gt('Area',0));
+  
+  var smokeChart = ui.Chart.feature.byFeature(smokeExt,'Date',['Area'])
     .setOptions({
       title: 'Smoke Plumes in ' + year,
       titleTextStyle: {fontSize: '13.5'},
       vAxis: {
         format: 'scientific',
-        title: 'Avg. Area (km²/plume)',
+        title: 'Smoke Extent (km²)',
         titleTextStyle: {fontSize: '12'},
       },
       hAxis: {
@@ -235,8 +241,8 @@ var getSmokeTSChart = function(year) {
           max: ee.Date.fromYMD(year,12,31).millis().getInfo()
         },
       },
-      lineWidth: 1,
-      series: {0: {color: '#222'}},
+      lineWidth: 1.5,
+      series: {0: {color: '#333'}},
       legend: {position: 'none'},
       height: '220px',
     });
@@ -268,7 +274,6 @@ var getSmokeText = function(year,month,day) {
     .filter(ee.Filter.eq('Year',year))
     .filter(ee.Filter.eq('Month',month))
     .filter(ee.Filter.eq('Day',day))
-    .sort('HHMM')
     .select(['HHMMstr','HtmlLink'],['HHMM','Link']);
   
   var nLinks = smokeTextDay.size();
@@ -391,7 +396,7 @@ var setTimePanel = function(viewMode) {
     var satSelect = ui.Select({
       items: ['GOES-16/East','GOES-17/West'],
       value: 'GOES-16/East',
-      style: {margin: '3px 75px 5px 8px', stretch: 'horizontal'}
+      style: {margin: '3px 50px 5px 8px', stretch: 'horizontal'}
     });
 
     var satPanel = ui.Panel([satLabel, satSelect], ui.Panel.Layout.Flow('horizontal'), {stretch: 'horizontal'});
@@ -558,10 +563,10 @@ var getLegend = function(map) {
       footDivider,
       ui.Label('️Legend',{fontWeight:'bold',fontSize:'20px',margin:'8px 3px 8px 8px'}),
       getLayerCheck(map,symbol.smoke + ' Smoke', true, 2, 0.6,
-        'Extent and density of smoke plumes observed from satellite images (e.g. GOES, VIIRS, MODIS) by NOAA\'s HMS analysts', '6px'),
+        'Extent and density of smoke plumes observed from satellite images (e.g. GOES, VIIRS, MODIS) by NOAA\'s HMS analysts, spatially aggregated by highest smoke density category', '6px'),
       getLegendDiscrete(smokeLabels,colPal_smoke),
       getLayerCheck(map,symbol.fire + ' Active Fires', true, 3, 0.65,
-        'Active fires detected by MODIS aboard the Terra and Aqua satellites', '6px'),
+        'Active fires detected by the MODIS sensor aboard the Terra and Aqua satellites', '6px'),
       ui.Label('Aerosol Optical Depth',{fontWeight:'bold',fontSize:'16px',margin:'2px 3px 0px 8px'}),
       ui.Label('MODIS Terra/Aqua MAIAC Aerosol Optical Depth (AOD)',{fontSize:'13px',color:'#666',margin:'2px 3px 2px 8px'}),
       ui.Label('Note: AOD not yet updated past ' + maiacEnd,{fontSize:'13px',color:'#999',margin:'0px 3px 8px 8px'}),
@@ -655,6 +660,7 @@ runButton.onClick(function() {
   map0.setCenter(-97,38.5,4);
   map0.setControlVisibility({fullscreenControl: false, layerList: false});
   map0.setOptions('Map', {'Dark': baseMap.darkTheme});
+  map0.unlisten();
   
   map1 = ui.Map(); map1.clear();
   map1.style().set({cursor:'crosshair'});
@@ -663,13 +669,8 @@ runButton.onClick(function() {
 
   mapPanel.add(map0);
   
-  map0.clear();
-  map0.setControlVisibility({layerList: false});
-  map0.setOptions('Map', {'Dark': baseMap.darkTheme});
-  map0.setCenter(-97,38.5,4);
-  map0.unlisten();
-  
   if (counter > 1) {
+    controlPanel.remove(controlPanel.widgets().get(6));
     controlPanel.remove(controlPanel.widgets().get(5));
     controlPanel.remove(controlPanel.widgets().get(4));
   }
@@ -710,7 +711,7 @@ runButton.onClick(function() {
     var goesDates = getGOESdates(satName,inYear,inMonth,inDay);
     var satCheckbox = ui.Checkbox({label: 'See ' + satName + ' RGB Images',
       style: {fontSize: '14.5px', position: 'bottom-left'}});
-    var satMessage = ui.Label('* Available from July 10, 2017 to present',
+    var satMessage = ui.Label('* Available from ' + goes_sDate[satName] + ' to present',
       {fontSize: '11px', margin: '0 8px 8px 8px', color: '#777'});
     var satCheckBool = goesDates.size().eq(0).getInfo();
     satCheckbox.setDisabled(satCheckBool);
@@ -746,13 +747,13 @@ runButton.onClick(function() {
 
         mapPanel.add(map_panels);
         map1.clear();
-        map1.setControlVisibility({mapTypeControl: false, fullscreenControl: false});
+        map1.setControlVisibility({mapTypeControl: false, fullscreenControl: false, layerList: false});
         
         var goesRGBcol = ee.ImageCollection(goesDates.map(function(dateTime) {
             return getGOESrgb(satName,dateTime);
           }));
           
-        var goesLabel = ui.Label(satName + ' RGB Images', {fontSize: '14.5px', margin: '0 0 6px 0', fontWeight: 'bold'});
+        var goesLabel = ui.Label(satName + ' RGB Images', {fontSize: '15px', margin: '0 0 6px 0', fontWeight: 'bold'});
         var hrLabel = ui.Label('Select Date/HH:MM (UTC):', {fontSize: '14.5px', margin: '0 8px 0 0'});
         var hrSelect = ui.Select({items: goesDates.getInfo(), placeholder: 'Select a timestamp',
           value: goesDates.get(0).getInfo(),
@@ -770,15 +771,22 @@ runButton.onClick(function() {
         goesButton.onClick(function() {
           
           goesCounter = goesCounter + 1;
+          
           if (goesCounter > 1) {
+            hrPanel.remove(hrPanel.widgets().get(3));
             map1.remove(map1.layers().get(0));
             map1.remove(map1.widgets().get(1));
+          }
+          if (goesCounter >= 1) {
+            var goesCheck = getLayerCheckSimple(map1,'RGB Image', true, 0, 0.88);
+            goesCheck.style().set({margin: '10px 0 -3px -8px', stretch: 'horizontal'});
+            hrPanel.add(goesCheck);
           }
           
           var inDateTime = hrSelect.getValue();
           var goesRGB = getGOESrgb(satName,inDateTime);
           
-          var goesLayer = ui.Map.Layer(goesRGB,{},'RGB',true,1);
+          var goesLayer = ui.Map.Layer(goesRGB,{},'RGB',true,1).setOpacity(0.88);
           map1.layers().set(0, goesLayer);
           
           var zoomBox = ui.Panel({style: {margin: '0'}});
@@ -921,8 +929,26 @@ runButton.onClick(function() {
   
   if (viewMode != 'Summary') {
     // Display times series chart:
-    var tsChart = getSmokeTSChart(inYear);
+    var tsChart = getSmokeTSChart(inYear,'Total');
     controlPanel.add(tsChart);
+    
+    var hmsCatLabel = ui.Label('Select Density:', {fontSize: '14.5px', margin: '8px 8px 8px 20px'});
+    var hmsCatSelect = ui.Select({
+      items: ['Total','Light','Medium','Heavy','Unspecified'],
+      value: 'Total',
+      style: {margin: '3px 65px 5px 8px', stretch: 'horizontal'}
+    });
+    
+    var hmsCatPanel = ui.Panel([hmsCatLabel, hmsCatSelect], ui.Panel.Layout.Flow('horizontal'),
+      {stretch: 'horizontal', margin: '-20px 0 8px 0px'});
+    
+    controlPanel.add(hmsCatPanel);
+    
+    hmsCatSelect.onChange(function(selected) {
+      controlPanel.remove(tsChart);
+      tsChart = getSmokeTSChart(inYear,selected);
+      controlPanel.insert(5,tsChart);
+    });
   }
   
   if (viewMode == 'Summary') {
