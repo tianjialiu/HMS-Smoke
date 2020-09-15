@@ -1,6 +1,7 @@
 /**** Start of imports. If edited, may not auto-convert in the playground. ****/
 var firms = ee.ImageCollection("FIRMS"),
-    maiac = ee.ImageCollection("MODIS/006/MCD19A2_GRANULES");
+    maiac = ee.ImageCollection("MODIS/006/MCD19A2_GRANULES"),
+    cams = ee.ImageCollection("ECMWF/CAMS/NRT");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 // *****************************************************************
 // =================================================================
@@ -79,21 +80,52 @@ var getFire = function(year,month,day) {
 };
 
 // filter MODIS AOD
-var aodBands = {
-  'green': 'Optical_Depth_055',
-  'blue': 'Optical_Depth_055'
-};
-
-var getAOD = function(year,month,day,band) {
+var getAOD_MAIAC = function(year,month,day) {
   var inDate = ee.Date.fromYMD(year,month,day);
   
-  var modisAODgranules = maiac.select(aodBands[band])
+  var modisAODgranules = maiac.select('Optical_Depth_055')
     .filterDate(inDate,inDate.advance(1,'day'));
   
   var modisAODday = ee.Algorithms.If(modisAODgranules.size().gt(0),
     modisAODgranules.median().multiply(0.001),ee.Image(0).selfMask());
   
   return ee.Image(modisAODday);
+};
+
+// filter CAMS PM2.5
+var pm25_ramp =
+  '<RasterSymbolizer>' +
+    '<ColorMap type="ramp" extended="false" >' +
+      '<ColorMapEntry color="#FEFF54" quantity="35.4" label="Moderate" />' +
+      '<ColorMapEntry color="#EF8532" quantity="55.4" label="Unhealthy for Sensitive Groups" />' +
+      '<ColorMapEntry color="#EA3423" quantity="150.4" label="Unhealthy" />' +
+      '<ColorMapEntry color="#8C1B4B" quantity="250.4" label="Very Unhealthy" />' +
+      '<ColorMapEntry color="#741425" quantity="5000" label="Hazardous" />' +
+    '</ColorMap>' +
+  '</RasterSymbolizer>';
+      
+var getPM25 = function(year,month,day) {
+  var inDate = ee.Date.fromYMD(year,month,day);
+  
+  var cams_day = cams.select('particulate_matter_d_less_than_25_um_surface')
+    .filterDate(inDate,inDate.advance(1,'day'));
+  
+  var pm25_day = ee.Algorithms.If(cams_day.size().gt(0),
+     cams_day.mean().multiply(1e9),ee.Image(0).selfMask());
+  
+  return ee.Image(pm25_day);
+};
+
+var getAOD_CAMS = function(year,month,day) {
+  var inDate = ee.Date.fromYMD(year,month,day);
+  
+  var cams_day = cams.select('total_aerosol_optical_depth_at_550nm_surface')
+    .filterDate(inDate,inDate.advance(1,'day'));
+  
+  var aod_day = ee.Algorithms.If(cams_day.size().gt(0),
+     cams_day.mean(),ee.Image(0).selfMask());
+  
+  return ee.Image(aod_day);
 };
 
 // filter and calculate GOES RGB
@@ -562,17 +594,22 @@ var getLegend = function(map) {
     widgets: [
       footDivider,
       ui.Label('️Legend',{fontWeight:'bold',fontSize:'20px',margin:'8px 3px 8px 8px'}),
-      getLayerCheck(map,symbol.smoke + ' Smoke', true, 2, 0.6,
+      getLayerCheck(map,symbol.smoke + ' Smoke', true, 3, 0.6,
         'Extent and density of smoke plumes observed from satellite images (e.g. GOES, VIIRS, MODIS) by NOAA\'s HMS analysts, spatially aggregated by highest smoke density category', '6px'),
       getLegendDiscrete(smokeLabels,colPal_smoke),
-      getLayerCheck(map,symbol.fire + ' Active Fires', true, 3, 0.65,
+      getLayerCheck(map,symbol.fire + ' Active Fires', true, 4, 0.65,
         'Active fires detected by the MODIS sensor aboard the Terra and Aqua satellites', '6px'),
       ui.Label('Aerosol Optical Depth',{fontWeight:'bold',fontSize:'16px',margin:'2px 3px 0px 8px'}),
-      ui.Label('MODIS Terra/Aqua MAIAC Aerosol Optical Depth (AOD)',{fontSize:'13px',color:'#666',margin:'2px 3px 2px 8px'}),
-      ui.Label('Note: AOD not yet updated past ' + maiacEnd,{fontSize:'13px',color:'#999',margin:'0px 3px 8px 8px'}),
-      getLayerCheckSimple(map,'0.55 μm (Green)', false, 0, 0.75),
-      getLayerCheckSimple(map,'0.47 μm (Blue)', false, 1, 0.75),
-      getLegendContinuous(0.5,colPal.Spectral)
+      ui.Label('MODIS Terra/Aqua MAIAC and ECMWF/CAMS Aerosol Optical Depth (AOD) at 550 nm',{fontSize:'13px',color:'#666',margin:'2px 3px 2px 8px'}),
+      ui.Label('Note: MAIAC AOD is not yet updated past ' + maiacEnd + '; CAMS AOD is available from June 21, 2016',{fontSize:'12.5px',color:'#999',margin:'0px 3px 8px 8px'}),
+      getLayerCheckSimple(map,'MAIAC', false, 1, 0.75),
+      getLayerCheckSimple(map,'CAMS', false, 2, 0.75),
+      getLegendContinuous(0.5,colPal.Spectral),
+      getLayerCheck(map,'PM2.5, 24-hr avg.', false, 0, 0.55,
+        'ECMWF/CAMS particulate matter (with diameter < 2.5 μm), in μg/m³', '0px'),
+      getLegendDiscrete(['Moderate (12.1 – 35.4)','Unhealthy for Sensitive Groups (35.5 – 55.4)',
+          'Unhealthy (55.5 – 150.4)','Very Unhealthy (150.5 – 250.4)','Hazardous (> 250.5)'],
+        ['#FEFF54','#EF8532','#EA3423','#8C1B4B','#741425'])
     ],
     style: {
       margin: '0px 0px 0px 0px',
@@ -687,14 +724,17 @@ runButton.onClick(function() {
    
     var hmsDay = getHMS(inYear,inMonth,inDay);
     var fireDay = getFire(inYear,inMonth,inDay);
-    var aodDay550 = getAOD(inYear,inMonth,inDay,'green');
-    var aodDay470 = getAOD(inYear,inMonth,inDay,'blue');
-    
+    var aodDay_maiac = getAOD_MAIAC(inYear,inMonth,inDay,'green');
+    var aodDay_cams = getAOD_CAMS(inYear,inMonth,inDay);
+    var pm25 = getPM25(inYear,inMonth,inDay);
+  
     // Display maps:
-    map0.addLayer(aodDay550,{min:0,max:0.5,palette:colPal.Spectral},
-      'AOD (550nm)',false,0.75);
-    map0.addLayer(aodDay470,{min:0,max:0.5,palette:colPal.Spectral},
-      'AOD (470nm)',false,0.75);
+    map0.addLayer(pm25.updateMask(pm25.gt(12)).sldStyle(pm25_ramp),{},
+      'PM25',false,0.55);
+    map0.addLayer(aodDay_maiac,{min:0,max:0.5,palette:colPal.Spectral},
+      'AOD (MAIAC)',false,0.75);
+    map0.addLayer(aodDay_cams,{min:0,max:0.5,palette:colPal.Spectral},
+      'AOD (CAMS)',false,0.75);
     map0.addLayer(hmsDay.style({styleProperty:'styleProperty',width:0.5}),{},
       'HMS Smoke',true,0.6);
     map0.addLayer(fireDay.style({color:'red',pointSize:1,width:0.7}),{},
