@@ -10,7 +10,7 @@ var firms = ee.ImageCollection("FIRMS"),
 // *****************************************************************
 /*
 // @author Tianjia Liu (tianjialiu@g.harvard.edu)
-// Last updated: September 14, 2020
+// Last updated: September 18, 2020
 
 // Purpose: visualize HMS smoke with MODIS active fires
 // and aerosol optical depth
@@ -29,7 +29,7 @@ var projFolder = 'projects/GlobalFires/';
 var sYear = 2005;
 var eYear = 2019;
 var nrtYear = eYear + 1;
-var nrtEnd = '2020-09-14';
+var nrtEnd = '2020-09-18';
 var maiacEnd = 'Aug 15, 2020';
 
 var region = ee.Geometry.Rectangle([-180,0,0,90],null,false);
@@ -154,7 +154,7 @@ var applyScaleAndOffset = function(image,bandName) {
 var filterGOESday = function(satName,year,month,day) {
   var inDate = ee.Date.fromYMD(year,month,day);
   var goesDay = ee.ImageCollection(goesRGB_ID[satName])
-    .filterDate(inDate,inDate.advance(1,'day'));
+    .filterDate(inDate.advance(5,'hour'),inDate.advance(28,'hour'));
   
   var goesHr = goesDay.filter(ee.Filter.calendarRange(0,3,'hour'))
     .merge(goesDay.filter(ee.Filter.calendarRange(11,23,'hour')));
@@ -174,6 +174,13 @@ var getGOESdates = function(satName,year,month,day) {
   });
   
   return goes_dates;
+};
+
+var getGOESdateFirst = function(goesDates) {
+  return goesDates.sort(goesDates.map(function(x) {
+    var goesDate = ee.Date.parse('Y-MM-dd HH:mm',x);
+    return goesDate.get('hour').add(goesDate.get('minute').divide(60)).subtract(22).abs();
+  })).get(0);
 };
 
 var getGOESrgb = function(satName,dateTime) {
@@ -198,7 +205,38 @@ var getGOESrgb = function(satName,dateTime) {
   var goesFire = ee.ImageCollection(goesFire_ID[satName])
     .filterDate(dateTime,dateTime.advance(1,'hour')).first()
     .select('DQF').eq(0).selfMask();
+  
+  return goesRGB.visualize({min:0, max:0.6, gamma: 1.25})
+    .blend(goesFire.visualize({palette: 'red', opacity: 0.4}));
+};
+
+var getGOESrgb_mask = function(satName,dateTime) {
+  dateTime = ee.Date.parse({format: 'Y-MM-dd HH:mm',date: dateTime});
+  var goesHr = ee.ImageCollection(goesRGB_ID[satName])
+    .filterDate(dateTime,dateTime.advance(1,'hour')).first();
     
+  var red = applyScaleAndOffset(goesHr,'CMI_C02').rename('RED');
+  var blue = applyScaleAndOffset(goesHr,'CMI_C01').rename('BLUE');
+  var veggie = applyScaleAndOffset(goesHr,'CMI_C03').rename('VEGGIE');
+  
+  // Bah, Gunshor, Schmit, Generation of GOES-16 True Color Imagery without a
+  // Green Band, 2018. https://doi.org/10.1029/2018EA000379
+  // Green = 0.45 * Red + 0.10 * NIR + 0.45 * Blue
+  var green1 = red.multiply(0.4);
+  var green2 = veggie.multiply(0.1);
+  var green3 = blue.multiply(0.45);
+  var green = green1.add(green2).add(green3).rename('GREEN');
+  
+  var goesMask = red.updateMask(green).updateMask(blue)
+    .gt(0).selfMask().unmask(0);
+  
+  var goesRGB = red.addBands(green).addBands(blue)
+    .multiply(goesMask).unmask(0);
+  
+  var goesFire = ee.ImageCollection(goesFire_ID[satName])
+    .filterDate(dateTime,dateTime.advance(1,'hour')).first()
+    .select('DQF').eq(0).selfMask();
+  
   return goesRGB.visualize({min:0, max:0.6, gamma: 1.25})
     .blend(goesFire.visualize({palette: 'red', opacity: 0.4}));
 };
@@ -249,12 +287,11 @@ var getSmokeTSChart = function(year,hmsCat) {
     var hmsDay = smokeExtYr.filter(ee.Filter.eq('JDay',JDay))
       .filter(ee.Filter.eq('Density',hmsCat)).first();
     
-    return ee.Feature(null,{JDay: JDay,
-      Date: ee.Date.fromYMD(year,1,1).advance(ee.Number(JDay).subtract(1),'day'),
-      Area: hmsDay.getNumber('Area')});
+    return hmsDay.set('Day',JDay,
+      'Date', ee.Date.fromYMD(year,1,1).advance(ee.Number(JDay).subtract(1),'day'));
     }));
   
-  smokeExt = smokeExt.filter(ee.Filter.gt('Area',0));
+  smokeExt = smokeExt.filter(ee.Filter.eq('Valid',true));
   
   var smokeChart = ui.Chart.feature.byFeature(smokeExt,'Date',['Area'])
     .setOptions({
@@ -605,8 +642,8 @@ var getLegend = function(map) {
       getLayerCheckSimple(map,'MAIAC', false, 1, 0.75),
       getLayerCheckSimple(map,'CAMS', false, 2, 0.75),
       getLegendContinuous(0.5,colPal.Spectral),
-      getLayerCheck(map,'PM2.5, 24-hr avg.', false, 0, 0.55,
-        'ECMWF/CAMS particulate matter (with diameter < 2.5 μm), in μg/m³', '0px'),
+      getLayerCheck(map,'Surface PM2.5', false, 0, 0.55,
+        'ECMWF/CAMS 24-hr average particulate matter (with diameter < 2.5 μm) concentrations, in μg/m³', '0px'),
       getLegendDiscrete(['Moderate (12.1 – 35.4)','Unhealthy for Sensitive Groups (35.5 – 55.4)',
           'Unhealthy (55.5 – 150.4)','Very Unhealthy (150.5 – 250.4)','Hazardous (> 250.5)'],
         ['#FEFF54','#EF8532','#EA3423','#8C1B4B','#741425'])
@@ -790,13 +827,13 @@ runButton.onClick(function() {
         map1.setControlVisibility({mapTypeControl: false, fullscreenControl: false, layerList: false});
         
         var goesRGBcol = ee.ImageCollection(goesDates.map(function(dateTime) {
-            return getGOESrgb(satName,dateTime);
+            return getGOESrgb_mask(satName,dateTime);
           }));
-          
+    
         var goesLabel = ui.Label(satName + ' RGB Images', {fontSize: '15px', margin: '0 0 6px 0', fontWeight: 'bold'});
         var hrLabel = ui.Label('Select Date/HH:MM (UTC):', {fontSize: '14.5px', margin: '0 8px 0 0'});
         var hrSelect = ui.Select({items: goesDates.getInfo(), placeholder: 'Select a timestamp',
-          value: goesDates.get(0).getInfo(),
+          value: getGOESdateFirst(goesDates).getInfo(),
           style: {stretch: 'horizontal', margin: '8px 0 5px 0'}});
         var goesButton = ui.Button({label: 'Plot Image on Map', style: {margin: '6px 0 0 0', color: '#FF0000'}});
         var hrPanel = ui.Panel([
@@ -857,7 +894,7 @@ runButton.onClick(function() {
           var centerZoomBox = function(lon, lat) {
             instructions.style().set('shown', false);
 
-            var w = lon-4, e = lon+4;
+            var w = lon-4.5, e = lon+4.5;
             var n = lat-3, s = lat+3;
             var outline = ee.Geometry.MultiLineString([
               [[w, s], [w, n]],
@@ -872,7 +909,7 @@ runButton.onClick(function() {
             var VID_params = {
               dimensions: 512,
               region: region,
-              framesPerSecond: 5,
+              framesPerSecond: 6,
               crs: 'EPSG:3857',
             };
             
