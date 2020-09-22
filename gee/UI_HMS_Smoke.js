@@ -10,7 +10,7 @@ var firms = ee.ImageCollection("FIRMS"),
 // *****************************************************************
 /*
 // @author Tianjia Liu (tianjialiu@g.harvard.edu)
-// Last updated: September 18, 2020
+// Last updated: September 22, 2020
 
 // Purpose: visualize HMS smoke with MODIS active fires
 // and aerosol optical depth
@@ -29,7 +29,7 @@ var projFolder = 'projects/GlobalFires/';
 var sYear = 2005;
 var eYear = 2019;
 var nrtYear = eYear + 1;
-var nrtEnd = '2020-09-18';
+var nrtEnd = '2020-09-21';
 var maiacEnd = 'Aug 15, 2020';
 
 var region = ee.Geometry.Rectangle([-180,0,0,90],null,false);
@@ -144,6 +144,26 @@ var goes_sDate = {
   'GOES-17/West': 'December 4, 2018'
 };
 
+var maxVisHrGOES = ee.Dictionary({
+  0: 0.6,
+  1: 0.6,
+  2: 0.6,
+  3: 0.6,
+  11: 0.6,
+  12: 0.65,
+  13: 0.7,
+  14: 0.75,
+  15: 0.8,
+  16: 0.85,
+  17: 0.85,
+  18: 0.85,
+  19: 0.9,
+  20: 0.8,
+  21: 0.7,
+  22: 0.6,
+  23: 0.6,
+});
+
 var applyScaleAndOffset = function(image,bandName) {
   var scale = ee.Number(image.get(bandName + '_scale'));
   var offset = ee.Number(image.get(bandName + '_offset'));
@@ -185,6 +205,9 @@ var getGOESdateFirst = function(goesDates) {
 
 var getGOESrgb = function(satName,dateTime) {
   dateTime = ee.Date.parse({format: 'Y-MM-dd HH:mm',date: dateTime});
+  var hour = dateTime.get('hour');
+  var maxVis = maxVisHrGOES.getNumber(hour);
+  
   var goesHr = ee.ImageCollection(goesRGB_ID[satName])
     .filterDate(dateTime,dateTime.advance(1,'hour')).first();
     
@@ -206,12 +229,15 @@ var getGOESrgb = function(satName,dateTime) {
     .filterDate(dateTime,dateTime.advance(1,'hour')).first()
     .select('DQF').eq(0).selfMask();
   
-  return goesRGB.visualize({min:0, max:0.6, gamma: 1.25})
+  return goesRGB.visualize({min:0, max:maxVis, gamma: 1.5})
     .blend(goesFire.visualize({palette: 'red', opacity: 0.4}));
 };
 
 var getGOESrgb_mask = function(satName,dateTime) {
   dateTime = ee.Date.parse({format: 'Y-MM-dd HH:mm',date: dateTime});
+  var hour = dateTime.get('hour');
+  var maxVis = maxVisHrGOES.getNumber(hour);
+  
   var goesHr = ee.ImageCollection(goesRGB_ID[satName])
     .filterDate(dateTime,dateTime.advance(1,'hour')).first();
     
@@ -237,7 +263,7 @@ var getGOESrgb_mask = function(satName,dateTime) {
     .filterDate(dateTime,dateTime.advance(1,'hour')).first()
     .select('DQF').eq(0).selfMask();
   
-  return goesRGB.visualize({min:0, max:0.6, gamma: 1.25})
+  return goesRGB.visualize({min:0, max:maxVis, gamma: 1.5})
     .blend(goesFire.visualize({palette: 'red', opacity: 0.4}));
 };
 
