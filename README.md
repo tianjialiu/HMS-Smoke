@@ -3,10 +3,10 @@ NOAA's Hazard Mapping System ([HMS](https://www.ospo.noaa.gov/Products/land/hms.
 
 The [HMS Smoke Explorer](https://globalfires.earthengine.app/view/hms-smoke) allows end-users to visualize NOAA's Hazard Mapping System (HMS) smoke product, MODIS active fires and aerosol optical depth, and GOES-16/17 (East/West) RGB imagery. Since 2005, NOAA analysts manually inspect visible imagery (e.g. GOES, MODIS, VIIRS) and outline the extent of smoke across North America, classified into three density categories: light, medium, and heavy, to produce the HMS smoke product.
 
-![banner image](https://github.com/tianjialiu/HMS-Smoke/blob/master/docs/imgs/HMS_Smoke_Explorer.png)
+![banner image](https://github.com/tianjialiu/HMS-Smoke/blob/main/docs/imgs/HMS_Smoke_Explorer.png)
 
 ### Tool Capabilities
-<img src="https://github.com/tianjialiu/HMS-Smoke/blob/master/docs/imgs/smoke_animation_2017aug01.gif" width="512">
+<img src="https://github.com/tianjialiu/HMS-Smoke/blob/main/docs/imgs/smoke_animation_2017aug01.gif" width="512">
 
 * Make an animation looping GOES-16/17 RGB imagery. Right-click on the GIF and select "Save Image As..." to save the animation to your local storage.
 * View satellite-derived (MODIS) and model forecast (CAMS) aerosol optical depth and surface PM<sub>2.5</sub> with HMS smoke.
