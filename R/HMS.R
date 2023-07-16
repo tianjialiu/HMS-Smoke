@@ -1,25 +1,29 @@
-library("raster"); library("rgdal"); library("rgeos")
+# ====================================================
+# Process HMS daily files, convert to yearly files
+# ====================================================
+# last updated: July 15, 2023
+# Tianjia Liu
 
-setwd("/Volumes/TLIU_DATA/HMS/Smoke_Polygons/")
+library("raster"); library("sf")
+setwd("/Users/TLiu/Google Drive/My Drive/HMS_ISD/HMS/Smoke_Polygons/")
 
-xYears <- 2005:2020
+xYears <- 2005:2023
 
 nDaysLeap <- c(31,29,31,30,31,30,31,31,30,31,30,31)
 nDaysNonLeap <- c(31,28,31,30,31,30,31,31,30,31,30,31)
 
-ymd_hhmm <- function(y,m,d,hhmm) {
-  as.POSIXct(paste0(y,"-",sprintf("%02d",m),"-",sprintf("%02d",d)," ",
-                    substr(sprintf("%04d",hhmm),1,2),":",substr(sprintf("%04d",hhmm),3,4),":00"),
-             tz="UTC")
+yj_hhmm <- function(inTime) {
+  as.POSIXct(inTime,format="%Y%j %H%M",tz="UTC")
 }
 
+world_boundary <- st_polygon(list(cbind(c(-180,180,180,-180,-180),c(-90,-90,90,90,-90))))
+
 for (iYear in xYears) {
-  
-  shpYr <- list()
+  shpYr <- list(); shpTally <- list()
   counter <- 0
   
   for (iMonth in 1:12) {
-    if (iYear %% 4 == 0) {
+    if (iYear %% 4 == 0 && (iYear %% 100 != 0 || iYear %% 400 == 0)) {
       nDay <- nDaysLeap[iMonth]
     } else {
       nDay <- nDaysNonLeap[iMonth]
@@ -29,46 +33,32 @@ for (iYear in xYears) {
       fileName <- paste0(iYear,"/",sprintf("%02d",iMonth),"/hms_smoke",iYear*1e4+iMonth*1e2+iDay,".shp")
       
       if (file.exists(fileName)) {
-        nShp <- suppressWarnings(ogrInfo(substr(fileName,1,7),substr(fileName,9,25))$nrows)
+        inShp <- st_read(substr(fileName,1,7),substr(fileName,9,25),quiet=T)
+        nShp <- nrow(inShp)
         
         if (nShp > 0) {
           counter <- counter + 1
           
           # Input shapefile
-          inShp <- readOGR(substr(fileName,1,7),substr(fileName,9,25),verbose=F)
-          
-          # Projection
-          crs(inShp) <- crs(raster())
+          inShp <- st_read(substr(fileName,1,7),substr(fileName,9,25),quiet=T)
           
           # ID
           JDay <- as.numeric(format(as.Date(substr(fileName,18,25),"%Y%m%d"),"%j"))
           if (is.null(inShp$ID[1])) {
-            inShp$ID <- iYear*1e7+JDay*1e4+(1:length(inShp))
+            inShp$ID <- iYear*1e7+JDay*1e4+(1:nrow(inShp))
           } else {inShp$ID <- iYear*1e7+JDay*1e4+(as.numeric(inShp$ID)+1)}
           
-          if (is.null(inShp$Start[1]) | is.na(inShp$Start[1])) {
-            inShp$Start <- NA
-            inShp$End <- NA
-          } else {
-            if (nchar(as.character(inShp$Start[1])) <= 4) {
-              inShp$Start <- as.numeric(as.character(inShp$Start))
-              inShp$End <- as.numeric(as.character(inShp$End))
-            } else {
-              inShp$Start <- as.numeric(do.call(rbind,strsplit(as.character(inShp$Start)," "))[,2])
-              inShp$End <- as.numeric(do.call(rbind,strsplit(as.character(inShp$End)," "))[,2])
-            }
-          }
+          stTime <- yj_hhmm(inShp$Start)
+          endTime <- yj_hhmm(inShp$End)
+          
+          inShp$Start <- as.numeric(do.call(rbind,strsplit(as.character(inShp$Start)," "))[,2])
+          inShp$End <- as.numeric(do.call(rbind,strsplit(as.character(inShp$End)," "))[,2])
           
           # Date Y-M-D
           inShp$Year <- iYear
           inShp$Month <- iMonth
           inShp$Day <- iDay
           inShp$JDay <- JDay
-          
-          # Duration, in hours
-          stTime <- ymd_hhmm(inShp$Year,inShp$Month,inShp$Day,inShp$Start)
-          endTime <- ymd_hhmm(inShp$Year,inShp$Month,inShp$Day,inShp$End)
-          endTime[which(endTime < stTime)] <- endTime[which(endTime < stTime)] + 24*60*60
           
           inShp$Duration <- as.numeric(difftime(endTime,stTime,units="mins"))/60
           
@@ -80,52 +70,64 @@ for (iYear in xYears) {
           inShp$Duration <- inShp$Duration + 0.25
           
           # Density
-          if (is.null(inShp$Density[1])) {
-            inShp$Density <- 0
-          } else if (is.na(inShp$Density[1])) {
-            inShp$Density <- 0
-          } else {inShp$Density <- as.numeric(as.character(inShp$Density))}
+          if (inShp$Density[1] == "NA") {
+            inShp$Density <- "Unspecified"
+          }
           
           # Satellite
-          if (is.null(inShp$Satellite[1])) {
+          if (inShp$Satellite[1] == "NA") {
             inShp$Satellite <- "Unspecified"
-          } else if (is.na(inShp$Satellite[1])) {
-            inShp$Satellite <- "Unspecified"
-          } else {inShp$Satellite <- inShp$Satellite}
+          }
+          
+          # Quality control
+          raw_rows <- nrow(inShp)
+          
+          # remove invalid geometries: unclosed rings, edges crossing each other, too few vertices 
+          for (iShp in 1:nrow(inShp)) {
+            iShpCoords <- st_coordinates(inShp[iShp,])[,1:2]
+            
+            # make sure the geometry is not a point
+            if (length(as.numeric(iShpCoords)) > 2) {
+              # make sure the geometry is not a linestring
+              if (nrow(iShpCoords) > 3) {
+                # remove invalid coordinates 
+                iShpCoords <- iShpCoords[which(iShpCoords[,2] >= -90 & iShpCoords[,2] <= 90),]
+                
+                # check if first coordinate is repeated
+                firstLastDiff <- sum(abs(iShpCoords[1,]-iShpCoords[nrow(iShpCoords),]))
+                if (firstLastDiff > 0) {
+                  # repeat first coordinate to close unclosed rings if necessary
+                  inShp$geometry[iShp] <- st_polygon(list(rbind(iShpCoords,iShpCoords[1,])))
+                }
+              }
+            }
+          }
+          invalid_rows <- length(which(!st_is_valid(inShp)))
+          inShp <- inShp[st_is_valid(inShp),] 
+          
+          # Projection
+          inShp <- st_set_crs(inShp, 4326)
+          
+          # Area (sq. km)
+          inShp$Area <- as.numeric(st_area(inShp)/1e6)
           
           inShp <- inShp[,c("ID","Year","Month","Day","JDay",
                             "Start","End","StSec","EndSec",
-                            "Duration","Density","Satellite")]
+                            "Duration","Density","Satellite","Area")]
           shpYr[[counter]] <- inShp
+          shpTally[[counter]] <- data.frame(Year=iYear,Month=iMonth,Day=iDay,JDay=JDay,
+                                            Raw=raw_rows,Invalid=invalid_rows)
         }
       }
     }
   }
   
   shpYr <- do.call(rbind,shpYr)
+  shpTally <- do.call(rbind,shpTally)
   
-  # remove bad geometries
-  # 1. outside extent of satellite view
-  inExt <- as.vector(extent(shpYr))
-  if (inExt[1] < -180 | inExt[2] > 0 | inExt[3] < -90 | inExt[4] > 90) {
-    
-    extShp <- matrix(NA,length(shpYr),4)
-    for (iShp in 1:length(shpYr)) {
-      extShp[iShp,] <- as.vector(extent(shpYr[iShp,]))
-    }
-    
-    badGeom <- unique(c(which(extShp[,1] < -180),which(extShp[,2] > 0),which(extShp[,3] < -90),which(extShp[,4] > 90)))
-    shpYr <- shpYr[-badGeom,]
-  }
-  
-  # 2. drawn as lines, not polygons
-  nVertex <- sapply(shpYr@polygons,function(y) nrow(y@Polygons[[1]]@coords))
-  shpYr <- shpYr[which(nVertex > 3),]
-  
-  # calculate area, sq. km
-  shpYrEqArea <- spTransform(shpYr,crs("+proj=cea +lon_0=0 +lat_ts=45 +x_0=0 +y_0=0 +ellps=WGS84 +units=m +no_defs"))
-  shpYr$Area <- gArea(shpYrEqArea,byid=T)/1e6
-  
-  writeOGR(shpYr,"processed",paste0("HMS_",iYear),driver="ESRI Shapefile",overwrite_layer=T)
+  suppressWarnings(st_write(shpYr,paste0("processed/HMS_",iYear,".shp"),quiet=T,append=F))
+  write.csv(shpTally,paste0("processed/HMS_",iYear,"_QA.csv"),row.names=F)
   timestamp(prefix=paste("Year",iYear,": ##------"))
+  
+  print(colSums(shpTally[,c("Raw","Invalid")]))
 }

@@ -9,8 +9,8 @@ var firms = ee.ImageCollection("FIRMS"),
 // =================================================================
 // *****************************************************************
 /*
-// @author Tianjia Liu (tianjialiu@g.harvard.edu)
-// Last updated: September 22, 2020
+// @author Tianjia Liu (tianjia.liu@columbia.edu)
+// Last updated: July 15, 2023
 
 // Purpose: visualize HMS smoke with MODIS active fires
 // and aerosol optical depth
@@ -27,10 +27,9 @@ var colPal = require('users/tl2581/packages:colorPalette.js');
 var projFolder = 'projects/GlobalFires/';
 
 var sYear = 2005;
-var eYear = 2019;
+var eYear = 2022;
 var nrtYear = eYear + 1;
-var nrtEnd = '2020-09-21';
-var maiacEnd = 'Aug 15, 2020';
+var nrtEnd = '2023-07-14';
 
 var region = ee.Geometry.Rectangle([-180,0,0,90],null,false);
 maiac = maiac.filterBounds(region);
@@ -39,15 +38,8 @@ maiac = maiac.filterBounds(region);
 var smokeLabels = ['Unspecified','Light','Medium','Heavy'];
 var colPal_smoke = ['#000000','#E7D516','#DAA520','#964B00'];
 
-var hmsCatList = {
-  'Unspecified': 0,
-  'Light': 5,
-  'Medium': 16,
-  'Heavy': 27
-};
-
 var applyHMScolor = function(hmsDay,hmsCat,hmsColor) {
-  return hmsDay.filter(ee.Filter.eq('Density',hmsCatList[hmsCat]))
+  return hmsDay.filter(ee.Filter.eq('Density',hmsCat))
     .map(function(x) {return x.set('styleProperty', ee.Dictionary({'color': hmsColor}))});
 };
 
@@ -74,7 +66,7 @@ var getFire = function(year,month,day) {
   var firmsDay = firms.filterDate(sDate,eDate).first().select('T21').toInt().selfMask()
     .reduceToVectors({geometryType: 'centroid',
       eightConnected: false, geometry: region,
-       bestEffort: true, maxPixels: 1e10});
+      bestEffort: true, maxPixels: 1e10});
   
   return firmsDay;
 };
@@ -103,47 +95,56 @@ var pm25_ramp =
       '<ColorMapEntry color="#741425" quantity="5000" label="Hazardous" />' +
     '</ColorMap>' +
   '</RasterSymbolizer>';
-      
-var getPM25 = function(year,month,day) {
-  var inDate = ee.Date.fromYMD(year,month,day);
-  
-  var cams_day = cams.select('particulate_matter_d_less_than_25_um_surface')
-    .filterDate(inDate,inDate.advance(1,'day'));
-  
-  var pm25_day = ee.Algorithms.If(cams_day.size().gt(0),
-     cams_day.mean().multiply(1e9),ee.Image(0).selfMask());
-  
-  return ee.Image(pm25_day);
+
+var camsBandsList = {
+  'aod': 'total_aerosol_optical_depth_at_550nm_surface',
+  'pm25': 'particulate_matter_d_less_than_25_um_surface'
 };
 
-var getAOD_CAMS = function(year,month,day) {
+var getCAMS = function(year,month,day,camsBand) {
   var inDate = ee.Date.fromYMD(year,month,day);
   
-  var cams_day = cams.select('total_aerosol_optical_depth_at_550nm_surface')
-    .filterDate(inDate,inDate.advance(1,'day'));
+  var cams_day = cams.select(camsBandsList[camsBand])
+    .filterDate(inDate,inDate.advance(1,'day'))
+    .filter(ee.Filter.eq('model_initialization_hour',0));
   
-  var aod_day = ee.Algorithms.If(cams_day.size().gt(0),
-     cams_day.mean(),ee.Image(0).selfMask());
+  var cams_closestHr = ee.Number(cams_day.aggregate_min('model_forecast_hour'));
   
-  return ee.Image(aod_day);
+  var camsBand_day = ee.Algorithms.If(cams_day.size().gt(0),
+    cams_day.filter(ee.Filter.gte('model_forecast_hour',cams_closestHr))
+      .filter(ee.Filter.lt('model_forecast_hour',cams_closestHr.add(23)))
+      .mean(),ee.Image(0).selfMask());
+  
+  return ee.Image(camsBand_day);
 };
+
+// define collections for GOES-East and GOES-West
+var goesRGB_ID_1617 = ee.Dictionary({
+  'GOES-East': 'NOAA/GOES/16/MCMIPF',
+  'GOES-West': 'NOAA/GOES/17/MCMIPF',
+});
+
+var goesFire_ID_1617 = ee.Dictionary({
+  'GOES-East': 'NOAA/GOES/16/FDCF',
+  'GOES-West': 'NOAA/GOES/17/FDCF',
+});
+
+var goesRGB_ID_1618 = ee.Dictionary({
+  'GOES-East': 'NOAA/GOES/16/MCMIPF',
+  'GOES-West': 'NOAA/GOES/18/MCMIPF',
+});
+
+var goesFire_ID_1618 = ee.Dictionary({
+  'GOES-East': 'NOAA/GOES/16/FDCF',
+  'GOES-West': 'NOAA/GOES/18/FDCF',
+});
+
+var goes_sDate = ee.Dictionary({
+  'GOES-East': 'July 10, 2017',
+  'GOES-West': 'August 28, 2018',
+});
 
 // filter and calculate GOES RGB
-var goesRGB_ID = {
-  'GOES-16/East': 'NOAA/GOES/16/MCMIPF',
-  'GOES-17/West': 'NOAA/GOES/17/MCMIPF'
-};
-
-var goesFire_ID = {
-  'GOES-16/East': 'NOAA/GOES/16/FDCF',
-  'GOES-17/West': 'NOAA/GOES/17/FDCF'
-};
-
-var goes_sDate = {
-  'GOES-16/East': 'July 17, 2017',
-  'GOES-17/West': 'December 4, 2018'
-};
-
 var maxVisHrGOES = ee.Dictionary({
   0: 0.6,
   1: 0.6,
@@ -171,24 +172,24 @@ var applyScaleAndOffset = function(image,bandName) {
   return image.select(bandName).multiply(scale).add(offset);
 };
 
-var filterGOESday = function(satName,year,month,day) {
+var filterGOESday = function(year,month,day,goesRGB_ID) {
   var inDate = ee.Date.fromYMD(year,month,day);
-  var goesDay = ee.ImageCollection(goesRGB_ID[satName])
+  var goesDay = ee.ImageCollection(goesRGB_ID)
     .filterDate(inDate.advance(5,'hour'),inDate.advance(28,'hour'));
   
   var goesHr = goesDay.filter(ee.Filter.calendarRange(0,3,'hour'))
     .merge(goesDay.filter(ee.Filter.calendarRange(11,23,'hour')));
     
-  goesHr = goesHr.filter(ee.Filter.calendarRange(0,0,'minute'))
-    .merge(goesHr.filter(ee.Filter.calendarRange(30,30,'minute')))
+  goesHr = goesHr.filter(ee.Filter.calendarRange(0,5,'minute'))
+    .merge(goesHr.filter(ee.Filter.calendarRange(30,35,'minute')))
     .sort('system:time_start');
   
   return goesHr;
 };
 
-var getGOESdates = function(satName,year,month,day) {
+var getGOESdates = function(year,month,day,goesRGB_ID) {
   
-  var goes_dates = filterGOESday(satName,year,month,day).toList(50).map(function(image) {
+  var goes_dates = filterGOESday(year,month,day,goesRGB_ID).toList(50).map(function(image) {
     return ee.String(ee.Date(ee.Image(image).get('system:time_start'))
       .format('Y-MM-dd HH:mm'));
   });
@@ -203,12 +204,12 @@ var getGOESdateFirst = function(goesDates) {
   })).get(0);
 };
 
-var getGOESrgb = function(satName,dateTime) {
+var getGOESrgb = function(dateTime,goesRGB_ID,goesFire_ID) {
   dateTime = ee.Date.parse({format: 'Y-MM-dd HH:mm',date: dateTime});
   var hour = dateTime.get('hour');
   var maxVis = maxVisHrGOES.getNumber(hour);
   
-  var goesHr = ee.ImageCollection(goesRGB_ID[satName])
+  var goesHr = ee.ImageCollection(goesRGB_ID)
     .filterDate(dateTime,dateTime.advance(1,'hour')).first();
     
   var red = applyScaleAndOffset(goesHr,'CMI_C02').rename('RED');
@@ -225,20 +226,22 @@ var getGOESrgb = function(satName,dateTime) {
   
   var goesRGB = red.addBands(green).addBands(blue);
   
-  var goesFire = ee.ImageCollection(goesFire_ID[satName])
-    .filterDate(dateTime,dateTime.advance(1,'hour')).first()
-    .select('DQF').eq(0).selfMask();
+  var goesFireCol = ee.ImageCollection(goesFire_ID)
+    .filterDate(dateTime,dateTime.advance(1,'hour')).select('DQF');
+    
+  var goesFire = ee.Algorithms.If(goesFireCol.size().gt(0),
+    ee.Image(goesFireCol.min().eq(0).selfMask()),ee.Image(0).selfMask());
   
   return goesRGB.visualize({min:0, max:maxVis, gamma: 1.5})
-    .blend(goesFire.visualize({palette: 'red', opacity: 0.4}));
+    .blend(ee.Image(goesFire).visualize({palette: 'red', opacity: 0.4}));
 };
 
-var getGOESrgb_mask = function(satName,dateTime) {
+var getGOESrgb_mask = function(dateTime,goesRGB_ID,goesFire_ID) {
   dateTime = ee.Date.parse({format: 'Y-MM-dd HH:mm',date: dateTime});
   var hour = dateTime.get('hour');
   var maxVis = maxVisHrGOES.getNumber(hour);
   
-  var goesHr = ee.ImageCollection(goesRGB_ID[satName])
+  var goesHr = ee.ImageCollection(goesRGB_ID)
     .filterDate(dateTime,dateTime.advance(1,'hour')).first();
     
   var red = applyScaleAndOffset(goesHr,'CMI_C02').rename('RED');
@@ -259,12 +262,14 @@ var getGOESrgb_mask = function(satName,dateTime) {
   var goesRGB = red.addBands(green).addBands(blue)
     .multiply(goesMask).unmask(0);
   
-  var goesFire = ee.ImageCollection(goesFire_ID[satName])
-    .filterDate(dateTime,dateTime.advance(1,'hour')).first()
-    .select('DQF').eq(0).selfMask();
+  var goesFireCol = ee.ImageCollection(goesFire_ID)
+    .filterDate(dateTime,dateTime.advance(1,'hour')).select('DQF');
+    
+  var goesFire = ee.Algorithms.If(goesFireCol.size().gt(0),
+    ee.Image(goesFireCol.min().eq(0).selfMask()),ee.Image(0).selfMask());
   
   return goesRGB.visualize({min:0, max:maxVis, gamma: 1.5})
-    .blend(goesFire.visualize({palette: 'red', opacity: 0.4}));
+    .blend(ee.Image(goesFire).visualize({palette: 'red', opacity: 0.4}));
 };
 
 // HMS extent
@@ -305,23 +310,34 @@ var hmsStats = ee.ImageCollection(projFolder + 'HMS/HMS_Stats');
 var getSmokeTSChart = function(year,hmsCat) {
   
   var smokeExtYr = hmsExtent.filter(ee.Filter.eq('Year',year));
+  var smokeExtHistYrs = hmsExtent.filter(ee.Filter.gte('Year',2010))
+    .filter(ee.Filter.lte('Year',2022));
+  
   var nDay = ee.Date.fromYMD(year,12,31)
     .difference(ee.Date.fromYMD(year,1,1),'day').add(1);
     
   var smokeExt = ee.FeatureCollection(ee.List.sequence(1,nDay,1).map(function(JDay) {
     
-    var hmsDay = smokeExtYr.filter(ee.Filter.eq('JDay',JDay))
+    var hmsDay_currentYr = smokeExtYr.filter(ee.Filter.eq('JDay',JDay))
       .filter(ee.Filter.eq('Density',hmsCat)).first();
+    var hmsDay_historicalYrs = smokeExtHistYrs.filter(ee.Filter.eq('JDay',JDay))
+      .filter(ee.Filter.eq('Density',hmsCat));
     
-    return hmsDay.set('Day',JDay,
-      'Date', ee.Date.fromYMD(year,1,1).advance(ee.Number(JDay).subtract(1),'day'));
-    }));
+    return ee.Feature(null, {
+      Day: JDay,
+      Date: ee.Date.fromYMD(year,1,1).advance(ee.Number(JDay).subtract(1),'day'),
+      Current: hmsDay_currentYr.getNumber('Area'),
+      Historical: hmsDay_historicalYrs.aggregate_mean('Area'),
+      Valid: hmsDay_currentYr.get('Valid')
+    });
+  }));
   
   smokeExt = smokeExt.filter(ee.Filter.eq('Valid',true));
   
-  var smokeChart = ui.Chart.feature.byFeature(smokeExt,'Date',['Area'])
+  var smokeChart = ui.Chart.feature.byFeature(smokeExt,'Date',['Current','Historical'])
+    .setSeriesNames(['Current','Historical (2010-2022)'])
     .setOptions({
-      title: 'Smoke Plumes in ' + year,
+      title: 'Smoke Plumes',
       titleTextStyle: {fontSize: '13.5'},
       vAxis: {
         format: 'scientific',
@@ -337,13 +353,13 @@ var getSmokeTSChart = function(year,hmsCat) {
         },
       },
       lineWidth: 1.5,
-      series: {0: {color: '#333'}},
-      legend: {position: 'none'},
+      series: {0: {color: '#333'}, 1: {color: 'red'}},
+      legend: {textStyle: {fontSize: 10.5}},
       height: '220px',
     });
   
   var chartDivider = ui.Panel(ui.Label(),ui.Panel.Layout.flow('horizontal'),
-    {margin: '3px 0px 3px 0px',height:'0.2px',border:'1px solid black',stretch:'horizontal'});
+    {margin: '3px 0px 3px 0px',height:'0.1px',border:'0.75px solid black',stretch:'horizontal'});
   var chartSectionLabel = ui.Label('Time Series Chart', {margin: '10px 8px 3px 8px', fontWeight: 'bold', fontSize: '20px'});
   
   var chartPanel = ui.Panel({
@@ -363,25 +379,51 @@ var hmsSmokeText = ee.FeatureCollection(projFolder + 'HMS/HMS_SmokeText');
 
 var getSmokeText = function(year,month,day) {
   var smokeTxtTitle = ui.Label('Smoke Text Description',
-    {fontWeight:'bold', fontSize: '18px', margin: '3px 8px 2px 8px'});
+    {fontWeight:'bold', fontSize: '18px', margin: '3px 8px 6px 8px'});
   
+  // as a table
   var smokeTextDay = hmsSmokeText
     .filter(ee.Filter.eq('Year',year))
     .filter(ee.Filter.eq('Month',month))
     .filter(ee.Filter.eq('Day',day))
     .select(['HHMMstr','HtmlLink'],['HHMM','Link']);
   
-  var nLinks = smokeTextDay.size();
-  
   var smokeTxtChart = ui.Chart.feature.byFeature(smokeTextDay,'HHMM',['Link'])
     .setChartType('Table').setOptions({
       allowHtml: true
     });
 
+  // as text
+  // var smokeTextDay = hmsSmokeText
+  //   .filter(ee.Filter.eq('Year',year))
+  //   .filter(ee.Filter.eq('Month',month))
+  //   .filter(ee.Filter.eq('Day',day))
+  //   .select(['HHMMstr','Link','Name'],['HHMM','Link','Name']);
+  
+  // var smokeList = smokeTextDay.toList(100).map(function(smokeTxt) {
+  //   return [
+  //     ee.Feature(smokeTxt).get('HHMM'),
+  //     ee.Feature(smokeTxt).get('Name'),
+  //     ee.Feature(smokeTxt).get('Link')
+  //   ];
+  // });
+
+  // var smokeTxtChart = ui.Panel([]);
+  // smokeList.evaluate(function(clientList) {
+  //   for (var i in clientList) {
+  //     var smokeLinkPanel = ui.Panel([ui.Label(clientList[i][0]),
+  //       ui.Label(clientList[i][1],{color: '#5886E8'},clientList[i][2])],
+  //       ui.Panel.Layout.flow('horizontal'),
+  //       {margin: '-4px 0px -2px 0px',stretch:'horizontal'});
+      
+  //     smokeTxtChart.add(smokeLinkPanel);
+  //   }
+  // });
+  
   return ui.Panel({widgets: [smokeTxtTitle,smokeTxtChart],
     style: {
       width: '250px',
-      position: 'bottom-right'
+      position: 'bottom-right',
     }
   });
 };
@@ -395,22 +437,23 @@ var outputRegion = ee.Geometry.Rectangle([-180,0,0,90],null,false);
 // ===============
 // Info panel
 var infoPanel = function() {
-  var hmsToolLabel = ui.Label('HMS Smoke Explorer', {margin: '12px 0px 0px 8px', fontWeight: 'bold', fontSize: '24px', border: '1px solid black', padding: '3px 3px 3px 3px'});
+  var hmsToolLabel = ui.Label('HMS Smoke Explorer', {margin: '12px 0px 0px 8px', fontWeight: 'bold', fontSize: '24px', border: '1px solid black', padding: '5px'});
   
   var infoLabel = ui.Label('NOAA\'s Hazard Mapping System (HMS) smoke product maps the extent of fire-related smoke plumes across the U.S. and adjacent areas.',
     {margin: '8px 20px 2px 8px', fontSize: '12.5px', color: '#777'});
   
-  var dataLabel = ui.Label('[Data/Info]', {margin: '3px 5px 3px 8px', fontSize: '12.5px'}, 'https://www.ospo.noaa.gov/Products/land/hms.html');
-  var codeLabel = ui.Label('[Code]', {margin: '3px 5px 3px 3px', fontSize: '12.5px'}, 'https://github.com/tianjialiu/HMS-Smoke');
+  var dataLabel = ui.Label('[Data/Info]', {margin: '3px 5px 3px 8px', fontSize: '12.5px', color: '#5886E8'}, 'https://www.ospo.noaa.gov/Products/land/hms.html');
+  var codeLabel = ui.Label('[Code]', {margin: '3px 5px 3px 3px', fontSize: '12.5px', color: '#5886E8'}, 'https://github.com/tianjialiu/HMS-Smoke');
+  var noaaLabel = ui.Label('[NOAA HRRR-Smoke]', {margin: '3px 5px 3px 3px', fontSize: '12.5px', color: '#5886E8'}, 'https://hwp-viz.gsd.esrl.noaa.gov/smoke/index.html');
   
   var headDivider = ui.Panel(ui.Label(),ui.Panel.Layout.flow('horizontal'),
-    {margin: '12px 0px 5px 0px',height:'1.25px',border:'0.75px solid black',stretch:'horizontal'});
+    {margin: '12px 0px 5px 0px',height:'1px',border:'0.75px solid black',stretch:'horizontal'});
    
   var inputSectionLabel = ui.Label('Input Parameters', {margin: '8px 8px 5px 8px', fontWeight: 'bold', fontSize: '20px'});
   
   return ui.Panel([
     hmsToolLabel, infoLabel,
-    ui.Panel([dataLabel, codeLabel], ui.Panel.Layout.Flow('horizontal'), {stretch: 'horizontal'}),
+    ui.Panel([dataLabel, codeLabel, noaaLabel], ui.Panel.Layout.Flow('horizontal'), {stretch: 'horizontal'}),
     headDivider, inputSectionLabel
   ]);
 };
@@ -433,7 +476,7 @@ var viewPanel = function() {
       if (selected == 'By Day') {setTimePanel('By Day')}
       if (selected == 'By Year') {setTimePanel('By Year')}
       if (selected == 'Summary') {
-        timeModePanel.add(ui.Label('Note: 2005 & 2020 are not included in the summary due to partial data availability.',
+        timeModePanel.add(ui.Label('Note: 2005 & 2023 are not included in the summary due to partial data availability.',
           {fontSize: '12.5px', margin: '5px 8px 8px 8px', color: '#777'}));
       }
     });
@@ -451,6 +494,9 @@ var setTimePanel = function(viewMode) {
   var dateInfoLabel = ui.Label('Filter HMS smoke and MODIS active fires by date.',
     {fontSize: '13px', margin: '10px 8px 5px 8px', color: '#777'});
   
+  var updateLabel = ui.Label('Date Range: (2005-08-05 to ' + nrtEnd +')',
+    {margin: '-3px 20px 5px 8px', fontSize: '12.5px', color: '#777'});
+    
   var yearLabel = ui.Label('2) Select Year:', {fontSize: '14.5px', margin: '8px 8px 8px 8px'});
   var yearSlider = ui.Slider({min: sYear, max: eYear, value: 2017, step: 1});
   if (viewMode == 'By Day') {yearSlider.setMax(nrtYear);}
@@ -463,7 +509,7 @@ var setTimePanel = function(viewMode) {
   var datePanel = ui.Panel([dateLabel, dateSlider], ui.Panel.Layout.Flow('horizontal'), {stretch: 'horizontal'});
   
   var timePanel = ui.Panel([dateInfoLabel,yearPanel]);
-  
+    
   if (viewMode == 'By Day') {
     yearSlider.onChange(function(inYear) {
       var startDate = ee.Date.fromYMD(inYear,1,1).format('Y-MM-dd').getInfo();
@@ -471,13 +517,12 @@ var setTimePanel = function(viewMode) {
       var inDate = ee.Date.fromYMD(inYear,8,1).format('Y-MM-dd').getInfo();
       
       if (inYear == sYear) {
-        startDate = ee.Date.fromYMD(inYear,8,5).format('Y-MM-dd').getInfo();
+        startDate = '2005-08-05';
         inDate = startDate;
       }
       
       if (inYear == nrtYear) {
-        endDate = nrtEnd;
-        inDate = endDate;
+        endDate = ee.Date(nrtEnd).advance(1,'day').format('Y-MM-dd').getInfo();
       }
       
       dateSlider = ui.DateSlider({start: startDate, end: endDate, value: inDate});
@@ -486,18 +531,20 @@ var setTimePanel = function(viewMode) {
       datePanel.remove(datePanel.widgets().get(1));
       datePanel.insert(1, dateSlider);
     });
-    
-    var satLabel = ui.Label('4) Select Satellite:', {fontSize: '14.5px', margin: '8px 8px 8px 8px'});
-    var satSelect = ui.Select({
-      items: ['GOES-16/East','GOES-17/West'],
-      value: 'GOES-16/East',
-      style: {margin: '3px 50px 5px 8px', stretch: 'horizontal'}
-    });
 
+  
+    var satLabel = ui.Label('4) Select Satellite:', {fontSize: '14.5px', margin: '8px 8px 8px 8px'});
+      var satSelect = ui.Select({
+        items: ['GOES-East','GOES-West'],
+        value: 'GOES-East',
+        style: {margin: '3px 50px 5px 8px', stretch: 'horizontal'}
+      });
+    
     var satPanel = ui.Panel([satLabel, satSelect], ui.Panel.Layout.Flow('horizontal'), {stretch: 'horizontal'});
 
-    timePanel = ui.Panel([dateInfoLabel,yearPanel,datePanel,satPanel]);
+    timePanel = ui.Panel([ui.Panel([dateInfoLabel,updateLabel]),yearPanel,datePanel,satPanel]);
   }
+
   
   return timeModePanel.add(timePanel);
 };
@@ -645,13 +692,13 @@ var getLegendContinuous = function(maxVal, colPal) {
 };
 
 var symbol = {
-  smoke: '( ⬛)',
-  fire: '(️ 🔴)'
+  smoke: '( ⬛ )',
+  fire: '(️ 🔴 )'
 };
 
 var getLegend = function(map) {
   var footDivider = ui.Panel(ui.Label(),ui.Panel.Layout.flow('horizontal'),
-    {margin: '10px 0px 6px 0px',height:'1.25px',border:'0.75px solid black',stretch:'horizontal'});
+    {margin: '10px 0px 6px 0px',height:'1px',border:'0.75px solid black',stretch:'horizontal'});
   
   var legendPanel = ui.Panel({
     widgets: [
@@ -663,13 +710,13 @@ var getLegend = function(map) {
       getLayerCheck(map,symbol.fire + ' Active Fires', true, 4, 0.65,
         'Active fires detected by the MODIS sensor aboard the Terra and Aqua satellites', '6px'),
       ui.Label('Aerosol Optical Depth',{fontWeight:'bold',fontSize:'16px',margin:'2px 3px 0px 8px'}),
-      ui.Label('MODIS Terra/Aqua MAIAC and ECMWF/CAMS Aerosol Optical Depth (AOD) at 550 nm',{fontSize:'13px',color:'#666',margin:'2px 3px 2px 8px'}),
-      ui.Label('Note: MAIAC AOD is not yet updated past ' + maiacEnd + '; CAMS AOD is available from June 21, 2016',{fontSize:'12.5px',color:'#999',margin:'0px 3px 8px 8px'}),
+      ui.Label('MODIS Terra/Aqua MAIAC and ECMWF/CAMS Aerosol Optical Depth (AOD) at 550 nm',{fontSize:'13px',color:'#666',margin:'2px 3px 4px 8px'}),
+      ui.Label('Note: MAIAC AOD may not be up-to-date; CAMS AOD is available from June 21, 2016',{fontSize:'12.5px',color:'#999',margin:'0px 3px 8px 8px'}),
       getLayerCheckSimple(map,'MAIAC', false, 1, 0.75),
       getLayerCheckSimple(map,'CAMS', false, 2, 0.75),
       getLegendContinuous(0.5,colPal.Spectral),
       getLayerCheck(map,'Surface PM2.5', false, 0, 0.55,
-        'ECMWF/CAMS 24-hr average particulate matter (with diameter < 2.5 μm) concentrations, in μg/m³', '0px'),
+        'ECMWF/CAMS daily average particulate matter (with diameter < 2.5 μm) concentrations, in μg/m³', '0px'),
       getLegendDiscrete(['Moderate (12.1 – 35.4)','Unhealthy for Sensitive Groups (35.5 – 55.4)',
           'Unhealthy (55.5 – 150.4)','Very Unhealthy (150.5 – 250.4)','Hazardous (> 250.5)'],
         ['#FEFF54','#EF8532','#EA3423','#8C1B4B','#741425'])
@@ -684,7 +731,7 @@ var getLegend = function(map) {
 
 var getLegendYr = function(map) {
   var footDivider = ui.Panel(ui.Label(),ui.Panel.Layout.flow('horizontal'),
-    {margin: '10px 0px 6px 0px',height:'1.25px',border:'0.75px solid black',stretch:'horizontal'});
+    {margin: '10px 0px 6px 0px',height:'1px',border:'0.75px solid black',stretch:'horizontal'});
   
   var legendPanel = ui.Panel({
     widgets: [
@@ -725,7 +772,6 @@ var map0 = ui.Map();
 map0.style().set({cursor:'crosshair'});
 map0.setCenter(-97,38.5,4);
 map0.setControlVisibility({fullscreenControl: false, layerList: false});
-map0.setOptions('Map', {'Dark': baseMap.darkTheme});
 
 var map1 = ui.Map();
 map1.style().set({cursor:'crosshair'});
@@ -759,7 +805,6 @@ runButton.onClick(function() {
   map0.style().set({cursor:'crosshair'});
   map0.setCenter(-97,38.5,4);
   map0.setControlVisibility({fullscreenControl: false, layerList: false});
-  map0.setOptions('Map', {'Dark': baseMap.darkTheme});
   map0.unlisten();
   
   map1 = ui.Map(); map1.clear();
@@ -784,12 +829,20 @@ runButton.onClick(function() {
     var inMonth = inDate.get('month');
     var inDay = inDate.get('day');
     var satName = getSat(timeModePanel);
-   
+    
+    var cutoffDate = ee.Date('2020-01-24');
+    var dateDiff = inDate.difference(cutoffDate,'day');
+    
+    var goesRGB_ID = ee.Dictionary(ee.Algorithms.If(dateDiff.lt(0),goesRGB_ID_1617,goesRGB_ID_1618))
+      .get(satName).getInfo();
+    var goesFire_ID = ee.Dictionary(ee.Algorithms.If(dateDiff.lt(0),goesFire_ID_1617,goesFire_ID_1618))
+      .get(satName).getInfo();
+      
     var hmsDay = getHMS(inYear,inMonth,inDay);
     var fireDay = getFire(inYear,inMonth,inDay);
     var aodDay_maiac = getAOD_MAIAC(inYear,inMonth,inDay,'green');
-    var aodDay_cams = getAOD_CAMS(inYear,inMonth,inDay);
-    var pm25 = getPM25(inYear,inMonth,inDay);
+    var aodDay_cams = getCAMS(inYear,inMonth,inDay,'aod');
+    var pm25 = getCAMS(inYear,inMonth,inDay,'pm25').multiply(1e9);
   
     // Display maps:
     map0.addLayer(pm25.updateMask(pm25.gt(12)).sldStyle(pm25_ramp),{},
@@ -811,20 +864,25 @@ runButton.onClick(function() {
     var smokeText = getSmokeText(inYear,inMonth,inDay);
     map0.add(smokeStats); map0.add(smokeText);
     
-    var goesDates = getGOESdates(satName,inYear,inMonth,inDay);
+    var goesDates = getGOESdates(inYear,inMonth,inDay,goesRGB_ID);
+   
+    var dateText = ui.Label(ee.String('Date: ').cat(ee.Date(inDate).format('Y-MM-dd')).getInfo(),
+      {fontSize: '16px', fontWeight: 'bold', margin: '8px 8px 0px 8px'});
     var satCheckbox = ui.Checkbox({label: 'See ' + satName + ' RGB Images',
-      style: {fontSize: '14.5px', position: 'bottom-left'}});
-    var satMessage = ui.Label('* Available from ' + goes_sDate[satName] + ' to present',
+      style: {fontSize: '14.5px', position: 'bottom-left', margin: '0'}});
+    var satMessage = ui.Label('* Available from ' + goes_sDate.get(satName).getInfo() + ' to present',
       {fontSize: '11px', margin: '0 8px 8px 8px', color: '#777'});
+    
     var satCheckBool = goesDates.size().eq(0).getInfo();
     satCheckbox.setDisabled(satCheckBool);
     var satPanel = ui.Panel({
-      widgets: [satCheckbox,satMessage],
+      widgets: [dateText,satCheckbox,satMessage],
       style: {
         position: 'bottom-left',
         padding: '0'
       }
     });
+    
     map0.add(satPanel);
     
     satCheckbox.onChange(function(checked) {
@@ -853,9 +911,9 @@ runButton.onClick(function() {
         map1.setControlVisibility({mapTypeControl: false, fullscreenControl: false, layerList: false});
         
         var goesRGBcol = ee.ImageCollection(goesDates.map(function(dateTime) {
-            return getGOESrgb_mask(satName,dateTime);
+            return getGOESrgb_mask(dateTime,goesRGB_ID,goesFire_ID);
           }));
-    
+
         var goesLabel = ui.Label(satName + ' RGB Images', {fontSize: '15px', margin: '0 0 6px 0', fontWeight: 'bold'});
         var hrLabel = ui.Label('Select Date/HH:MM (UTC):', {fontSize: '14.5px', margin: '0 8px 0 0'});
         var hrSelect = ui.Select({items: goesDates.getInfo(), placeholder: 'Select a timestamp',
@@ -887,7 +945,7 @@ runButton.onClick(function() {
           }
           
           var inDateTime = hrSelect.getValue();
-          var goesRGB = getGOESrgb(satName,inDateTime);
+          var goesRGB = getGOESrgb(inDateTime,goesRGB_ID,goesFire_ID);
           
           var goesLayer = ui.Map.Layer(goesRGB,{},'RGB',true,1).setOpacity(0.88);
           map1.layers().set(0, goesLayer);
@@ -940,8 +998,11 @@ runButton.onClick(function() {
             };
             
             var goesVID = ui.Thumbnail(goesRGBcol, VID_params);
-           
+            var goesVIDlink = ui.Label('Download GIF',{margin: '0 8px 8px 8px', color: '#5886E8'},
+              goesRGBcol.getVideoThumbURL(VID_params));
+
             panel.clear(); panel.add(goesVID);
+            panel.add(goesVIDlink);
             
             var layer = ui.Map.Layer(outline, {color: 'FFFFFF'}, 'Zoom Box Bounds');
             map1.layers().set(1, layer);
@@ -1160,5 +1221,4 @@ runButton.onClick(function() {
           .add(smokeDaysChart).add(smokeHrsChart).add(lonLatCoords);
       });
   }
-  
 });
