@@ -1,7 +1,7 @@
 # HMS-Smoke
 NOAA's Hazard Mapping System ([HMS](https://www.ospo.noaa.gov/Products/land/hms.html)) Smoke Product
 
-The [HMS Smoke Explorer](https://globalfires.earthengine.app/view/hms-smoke) allows end-users to visualize NOAA's Hazard Mapping System (HMS) smoke product, MODIS active fires and aerosol optical depth, and GOES-16/17/18 (East/West) RGB imagery. Since 2005, NOAA analysts manually inspect visible imagery (e.g. GOES, MODIS, VIIRS) and outline the extent of smoke across North America, classified into three density categories: light, medium, and heavy, to produce the HMS smoke product.
+The [HMS Smoke Explorer](https://globalfires.earthengine.app/view/hms-smoke) allows end-users to visualize NOAA's Hazard Mapping System (HMS) smoke product, MODIS active fires and aerosol optical depth, and GOES-East/West RGB imagery. Since 2005, NOAA analysts manually inspect visible imagery (e.g. GOES, MODIS, VIIRS) and outline the extent of smoke across North America, classified into three density categories: light, medium, and heavy, to produce the HMS smoke product.
 
 ![banner image](https://github.com/tianjialiu/HMS-Smoke/blob/main/docs/imgs/HMS_Smoke_Explorer.png)
 
@@ -30,7 +30,7 @@ The [HMS Smoke Explorer](https://globalfires.earthengine.app/view/hms-smoke) all
 * The HMS 'Duration' is calculated from the start and end times of satellite images used to outline the smoke. Thus, it is not an estimate of the true smoke duration. HMS analysts outline smoke using only daytime satellite imagery and generally analyze heavy smoke twice per day in the morning and late afternoon.
 * HMS smoke polygons in 2005-2007 and 2009 are not classified into smoke density classes (light, medium, heavy).
 * HMS smoke polygons with bad geometries and throws an error in R (i.e. drawn as lines rather than polygons, edges crossing edges) have been removed.
-* GOES-16 became operational on December 18, 2017, GOES-17 on February 12, 2019, and GOES-18 on January 4, 2023(replacing GOES-17)
+* GOES-16 became operational on December 18, 2017, GOES-17 on February 12, 2019, and GOES-18 on January 4, 2023 (replacing GOES-17). Note these dates when selecting the GOES RGB images.
 
 ### Updates
 * July 2023: updated R code to process HMS from rgdal to sf, code is now more inclusive of out-of-bounds polygons and attempts to fix some bad geometries
@@ -38,6 +38,7 @@ The [HMS Smoke Explorer](https://globalfires.earthengine.app/view/hms-smoke) all
 * August 2020: added visualization of GOES RGB imagery, HMS smoke days and 'duration'
 
 ### HMS Quality Control
+Number of HMS polygons in each year, and how many are invalid after processing in R.
 | Year | Total | Invalid |
 | :--- | :--- | :--- | 
 | 2005 | 6296 | 8 |
@@ -58,10 +59,3 @@ The [HMS Smoke Explorer](https://globalfires.earthengine.app/view/hms-smoke) all
 | 2020 | 45440 | 2 |
 | 2021 | 27573 | 1 |
 | 2022 | 21906 | 3 |
-
-
-
-
-
-
-
