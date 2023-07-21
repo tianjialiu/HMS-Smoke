@@ -10,7 +10,7 @@ var firms = ee.ImageCollection("FIRMS"),
 // *****************************************************************
 /*
 // @author Tianjia Liu (tianjia.liu@columbia.edu)
-// Last updated: July 15, 2023
+// Last updated: July 21, 2023
 
 // Purpose: visualize HMS smoke with MODIS active fires
 // and aerosol optical depth
@@ -29,7 +29,7 @@ var projFolder = 'projects/GlobalFires/';
 var sYear = 2005;
 var eYear = 2022;
 var nrtYear = eYear + 1;
-var nrtEnd = '2023-07-14';
+var nrtEnd = '2023-07-20';
 
 var region = ee.Geometry.Rectangle([-180,0,0,90],null,false);
 maiac = maiac.filterBounds(region);
@@ -445,6 +445,7 @@ var infoPanel = function() {
   var dataLabel = ui.Label('[Data/Info]', {margin: '3px 5px 3px 8px', fontSize: '12.5px', color: '#5886E8'}, 'https://www.ospo.noaa.gov/Products/land/hms.html');
   var codeLabel = ui.Label('[Code]', {margin: '3px 5px 3px 3px', fontSize: '12.5px', color: '#5886E8'}, 'https://github.com/tianjialiu/HMS-Smoke');
   var noaaLabel = ui.Label('[NOAA HRRR-Smoke]', {margin: '3px 5px 3px 3px', fontSize: '12.5px', color: '#5886E8'}, 'https://hwp-viz.gsd.esrl.noaa.gov/smoke/index.html');
+  var epaLabel = ui.Label('[EPA AirNow]', {margin: '3px 5px 3px 3px', fontSize: '12.5px', color: '#5886E8'}, 'https://fire.airnow.gov/#');
   
   var headDivider = ui.Panel(ui.Label(),ui.Panel.Layout.flow('horizontal'),
     {margin: '12px 0px 5px 0px',height:'1px',border:'0.75px solid black',stretch:'horizontal'});
@@ -453,7 +454,7 @@ var infoPanel = function() {
   
   return ui.Panel([
     hmsToolLabel, infoLabel,
-    ui.Panel([dataLabel, codeLabel, noaaLabel], ui.Panel.Layout.Flow('horizontal'), {stretch: 'horizontal'}),
+    ui.Panel([dataLabel, codeLabel, noaaLabel, epaLabel], ui.Panel.Layout.Flow('horizontal'), {stretch: 'horizontal'}),
     headDivider, inputSectionLabel
   ]);
 };
