@@ -61,12 +61,11 @@ Notes:
 * For QA = 2, the first coordinate is repeated at the end of the list of coordinates to close the polygon ring
 
 ### Caveats
-* The HMS smoke product represents smoke as seen from satellites. In some places, smoke may be aloft and may not affect surface air quality.
-* Use caution when assessing trends in smoke using the HMS smoke product outside of CONUS. Note the lower spatial coverage in pre-GOES-16/17 years, as denoted by the artificial boundaries in annual aggregates.
+* The HMS smoke product represents smoke as seen from satellites. In some places, smoke may be aloft and may not affect surface air quality. This is particularly true for light smoke.
+* Use caution when assessing trends in smoke using the HMS smoke product outside of CONUS. Note the lower spatial coverage in earlier years, which can be seen from the artificial boundaries in annual aggregates.
 * The HMS 'Duration' is calculated from the start and end times of satellite images used to outline the smoke. Thus, it is not an estimate of the true smoke duration. HMS analysts outline smoke using only daytime satellite imagery and generally analyze heavy smoke twice per day in the morning and late afternoon.
 * HMS smoke polygons in 2005-2007, 2009, and some in 2008 and 2010 are not classified into smoke density classes (light, medium, heavy).
 * HMS smoke polygons with bad geometries and throws an error in R (i.e. drawn as lines rather than polygons, edges crossing edges) have been removed.
-* There are some artificial boundaries in smoke plumes
 * GOES-16/East became operational on December 18, 2017, GOES-17/West on February 12, 2019, and GOES-18/West on January 4, 2023 (replacing GOES-17/West). Note these dates when selecting the GOES RGB images.
 
 ### HMS Quality Control
