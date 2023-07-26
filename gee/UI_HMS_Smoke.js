@@ -10,7 +10,7 @@ var firms = ee.ImageCollection("FIRMS"),
 // *****************************************************************
 /*
 // @author Tianjia Liu (tianjia.liu@columbia.edu)
-// Last updated: July 21, 2023
+// Last updated: July 25, 2023
 
 // Purpose: visualize HMS smoke with MODIS active fires
 // and aerosol optical depth
@@ -29,7 +29,7 @@ var projFolder = 'projects/GlobalFires/';
 var sYear = 2005;
 var eYear = 2022;
 var nrtYear = eYear + 1;
-var nrtEnd = '2023-07-20';
+var nrtEnd = '2023-07-25';
 
 var region = ee.Geometry.Rectangle([-180,0,0,90],null,false);
 maiac = maiac.filterBounds(region);

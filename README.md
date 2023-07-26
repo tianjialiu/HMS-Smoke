@@ -49,9 +49,9 @@ StSec | Start time | seconds since 1970-01-01
 EndSec | End time | seconds since 1970-01-01
 Duration | End time minus start time, with a 15-min buffer | hours
 Density | Density of smoke polygon | 'Light', 'Medium', 'Heavy', or 'Unspecified'
-Satellite | Satellite used as a reference for the polygon | e.g., 'GOES-EAST', 'GOES-WEST
+Satellite | Satellite used as a reference for the polygon | e.g., 'GOES-EAST', 'GOES-WEST'
 Area | Area of polygon | km<sup>2</sup>
-QAFlag | QA flag | 0-5 (valid: 0 = good, 1 = coordinates adjusted, 2 = unclosed rings; invalid (not included in SHP): 3 = linestring, 4 = point / empty, 5 = crossed edges)
+QAFlag | QA flag | 0-5 (valid: 0 = good, 1 = coordinates adjusted, 2 = unclosed rings; invalid and not included in SHP: 3 = linestring, 4 = point / empty, 5 = crossed edges)
 IsMulti | Is the polygon a multipolygon? | 'Y' or 'N'
 
 Notes:
@@ -69,7 +69,7 @@ Notes:
 * GOES-16/East became operational on December 18, 2017, GOES-17/West on February 12, 2019, and GOES-18/West on January 4, 2023 (replacing GOES-17/West). Note these dates when selecting the GOES RGB images.
 
 ### HMS Quality Control
-Number of HMS polygons in each year, and how many are invalid after processing in R (up to July 20, 2023).
+Number of HMS polygons in each year, and how many are invalid after processing in R (up to July 25, 2023).
 | Year | Total | Valid | Invalid | 
 | :--- | :--- | :--- | :--- | 
 2005 | 6296 | 6291 | 5
@@ -90,7 +90,7 @@ Number of HMS polygons in each year, and how many are invalid after processing i
 2020 | 45440 | 45438 | 2
 2021 | 27573 | 27572 | 1
 2022 | 21906 | 21904 | 2
-2023 | 12697 | 12696 | 1
+2023 | 12855 | 12854 | 1
 
 ### Updates
 * July 2023: updated R code to process HMS from rgdal to sf, code is now more inclusive of out-of-bounds polygons and attempts to fix some bad geometries (unclosed rings and out-of-bounds coordinates) but excludes polygons with crossed edges as sf cannot fix them; added QA flags
