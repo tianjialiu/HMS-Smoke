@@ -10,7 +10,7 @@ var firms = ee.ImageCollection("FIRMS"),
 // *****************************************************************
 /*
 // @author Tianjia Liu (tianjia.liu@columbia.edu)
-// Last updated: July 25, 2023
+// Last updated: July 29, 2023
 
 // Purpose: visualize HMS smoke with MODIS active fires
 // and aerosol optical depth
@@ -29,7 +29,7 @@ var projFolder = 'projects/GlobalFires/';
 var sYear = 2005;
 var eYear = 2022;
 var nrtYear = eYear + 1;
-var nrtEnd = '2023-07-25';
+var nrtEnd = '2023-07-28';
 
 var region = ee.Geometry.Rectangle([-180,0,0,90],null,false);
 maiac = maiac.filterBounds(region);
@@ -227,10 +227,10 @@ var getGOESrgb = function(dateTime,goesRGB_ID,goesFire_ID) {
   var goesRGB = red.addBands(green).addBands(blue);
   
   var goesFireCol = ee.ImageCollection(goesFire_ID)
-    .filterDate(dateTime,dateTime.advance(1,'hour')).select('DQF');
+    .filterDate(dateTime,dateTime.advance(1,'hour')).select('Power');
     
   var goesFire = ee.Algorithms.If(goesFireCol.size().gt(0),
-    ee.Image(goesFireCol.min().eq(0).selfMask()),ee.Image(0).selfMask());
+    ee.Image(goesFireCol.max().gt(0).selfMask()),ee.Image(0).selfMask());
   
   return goesRGB.visualize({min:0, max:maxVis, gamma: 1.5})
     .blend(ee.Image(goesFire).visualize({palette: 'red', opacity: 0.4}));
@@ -504,10 +504,28 @@ var setTimePanel = function(viewMode) {
   yearSlider.style().set('stretch', 'horizontal');
   var yearPanel = ui.Panel([yearLabel, yearSlider], ui.Panel.Layout.Flow('horizontal'), {stretch: 'horizontal'});
   
+  var jumpToLatestButton = ui.Button({label: 'Jump to Latest',  
+    style: {stretch: 'horizontal',width:'35%',margin:'3px 8px 8px 220px'}});
+  var jumpToLatestPanel = ui.Panel([jumpToLatestButton],
+    ui.Panel.Layout.Flow('horizontal'), {stretch: 'horizontal'});
+  
   var dateLabel = ui.Label('3) Select Date:', {fontSize: '14.5px', margin: '12px 8px 8px 8px'});
   var dateSlider = ui.DateSlider({start: '2017-01-01', end: '2018-01-01', value: '2017-08-01'});
   dateSlider.style().set('stretch', 'horizontal');
   var datePanel = ui.Panel([dateLabel, dateSlider], ui.Panel.Layout.Flow('horizontal'), {stretch: 'horizontal'});
+  
+  jumpToLatestButton.onClick(function() {
+    yearSlider.setValue(nrtYear);
+    var startDate = ee.Date.fromYMD(nrtYear,1,1).format('Y-MM-dd').getInfo();
+    var inDate = ee.Date(nrtEnd).format('Y-MM-dd').getInfo();
+    var endDate = ee.Date(nrtEnd).advance(1,'day').format('Y-MM-dd').getInfo();
+      
+    dateSlider = ui.DateSlider({start: startDate, end: endDate, value: inDate});
+    dateSlider.style().set('stretch', 'horizontal');
+    
+    datePanel.remove(datePanel.widgets().get(1));
+    datePanel.insert(1, dateSlider);
+  });
   
   var timePanel = ui.Panel([dateInfoLabel,yearPanel]);
     
@@ -543,10 +561,9 @@ var setTimePanel = function(viewMode) {
     
     var satPanel = ui.Panel([satLabel, satSelect], ui.Panel.Layout.Flow('horizontal'), {stretch: 'horizontal'});
 
-    timePanel = ui.Panel([ui.Panel([dateInfoLabel,updateLabel]),yearPanel,datePanel,satPanel]);
+    timePanel = ui.Panel([ui.Panel([dateInfoLabel,updateLabel]),yearPanel,datePanel,jumpToLatestPanel,satPanel]);
   }
 
-  
   return timeModePanel.add(timePanel);
 };
 
@@ -566,7 +583,7 @@ var getYear = function(timeModePanel,viewMode) {
 };
 
 var getSat = function(timeModePanel) {
-  var satName = timeModePanel.widgets().get(0).widgets().get(3).widgets().get(1).getValue();
+  var satName = timeModePanel.widgets().get(0).widgets().get(4).widgets().get(1).getValue();
 
   return satName;
 };
@@ -793,7 +810,8 @@ var viewPanel = viewPanel();
 var timeModePanel = ui.Panel();
 setTimePanel('By Day');
 
-controlPanel.add(infoPanel).add(viewPanel).add(timeModePanel).add(runButton);
+controlPanel.add(infoPanel).add(viewPanel).add(timeModePanel)
+  .add(runButton);
 
 var counter = 0;
 

@@ -69,7 +69,7 @@ Notes:
 * GOES-16/East became operational on December 18, 2017, GOES-17/West on February 12, 2019, and GOES-18/West on January 4, 2023 (replacing GOES-17/West). Note these dates when selecting the GOES RGB images.
 
 ### HMS Quality Control
-Number of HMS polygons in each year, and how many are invalid after processing in R (up to July 25, 2023).
+Number of HMS polygons in each year, and how many are invalid after processing in R (up to July 28, 2023).
 | Year | Total | Valid | Invalid | 
 | :--- | :--- | :--- | :--- | 
 2005 | 6296 | 6291 | 5
@@ -90,9 +90,9 @@ Number of HMS polygons in each year, and how many are invalid after processing i
 2020 | 45440 | 45438 | 2
 2021 | 27573 | 27572 | 1
 2022 | 21906 | 21904 | 2
-2023 | 12855 | 12854 | 1
+2023 | 12944 | 12943 | 1
 
 ### Updates
-* July 2023: updated R code to process HMS from rgdal to sf, code is now more inclusive of out-of-bounds polygons and attempts to fix some bad geometries (unclosed rings and out-of-bounds coordinates) but excludes polygons with crossed edges as sf cannot fix them; added QA flags
+* July 2023: updated R code to process HMS from rgdal to sf, code is now more inclusive of out-of-bounds polygons and attempts to fix some bad geometries (unclosed rings and out-of-bounds coordinates) but excludes polygons with crossed edges as sf cannot fix them; added QA flags; added jump to latest button
 * September 2020: added option to select GOES-East or GOES-West full disk imagery, added CAMS PM<sub>2.5</sub> and AOD
 * August 2020: added visualization of GOES RGB imagery, HMS smoke days and 'duration'
