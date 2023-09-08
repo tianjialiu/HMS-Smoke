@@ -858,10 +858,11 @@ runButton.onClick(function() {
         return breakPt.set('dateDiff',dateDiff);
     });
  
-    var goesIdx = goesDateDiff.filter(ee.Filter.gt('dateDiff',0)).first().getNumber('idx');
+    var goesIdx = goesDateDiff.filter(ee.Filter.gte('dateDiff',0))
+      .sort('dateDiff').first().getNumber('idx');
     var goesRGB_col = ee.ImageCollection(ee.List(goesRGB_IDs.get(satName)).get(goesIdx));
     var goesFire_col = ee.ImageCollection(ee.List(goesFire_IDs.get(satName)).get(goesIdx));
-      
+
     var hmsDay = getHMS(inYear,inMonth,inDay);
     var fireDay = getFire(inYear,inMonth,inDay);
     var aodDay_maiac = getAOD_MAIAC(inYear,inMonth,inDay,'green');
