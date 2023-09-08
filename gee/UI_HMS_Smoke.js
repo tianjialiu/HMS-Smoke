@@ -10,7 +10,7 @@ var firms = ee.ImageCollection("FIRMS"),
 // *****************************************************************
 /*
 // @author Tianjia Liu (tianjia.liu@columbia.edu)
-// Last updated: September 7, 2023
+// Last updated: September 8, 2023
 
 // Purpose: visualize HMS smoke with MODIS active fires
 // and aerosol optical depth
@@ -856,10 +856,11 @@ runButton.onClick(function() {
       .map(function(breakPt) {
         var dateDiff = inDate.difference(breakPt.get('breakPt'),'day');
         return breakPt.set('dateDiff',dateDiff);
-    });
+    }).filter(ee.Filter.gte('dateDiff',0));
  
-    var goesIdx = goesDateDiff.filter(ee.Filter.gte('dateDiff',0))
-      .sort('dateDiff').first().getNumber('idx');
+    var goesIdx = ee.Number(ee.Algorithms.If(goesDateDiff.size().gt(0),
+      goesDateDiff.sort('dateDiff').first().getNumber('idx'),0));
+      
     var goesRGB_col = ee.ImageCollection(ee.List(goesRGB_IDs.get(satName)).get(goesIdx));
     var goesFire_col = ee.ImageCollection(ee.List(goesFire_IDs.get(satName)).get(goesIdx));
 
