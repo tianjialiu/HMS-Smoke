@@ -10,7 +10,7 @@ var firms = ee.ImageCollection("FIRMS"),
 // *****************************************************************
 /*
 // @author Tianjia Liu (tianjia.liu@columbia.edu)
-// Last updated: July 29, 2023
+// Last updated: September 7, 2023
 
 // Purpose: visualize HMS smoke with MODIS active fires
 // and aerosol optical depth
@@ -29,7 +29,7 @@ var projFolder = 'projects/GlobalFires/';
 var sYear = 2005;
 var eYear = 2022;
 var nrtYear = eYear + 1;
-var nrtEnd = '2023-07-28';
+var nrtEnd = '2023-09-06';
 
 var region = ee.Geometry.Rectangle([-180,0,0,90],null,false);
 maiac = maiac.filterBounds(region);
@@ -119,29 +119,31 @@ var getCAMS = function(year,month,day,camsBand) {
 };
 
 // define collections for GOES-East and GOES-West
-var goesRGB_ID_1617 = ee.Dictionary({
-  'GOES-East': 'NOAA/GOES/16/MCMIPF',
-  'GOES-West': 'NOAA/GOES/17/MCMIPF',
+var goesRGB_IDs = ee.Dictionary({
+  'GOES-East': ee.List([ee.ImageCollection('NOAA/GOES/16/MCMIPF')]),
+  'GOES-West': ee.List([ee.ImageCollection('NOAA/GOES/17/MCMIPF'),
+    ee.ImageCollection('NOAA/GOES/18/MCMIPF')])
 });
 
-var goesFire_ID_1617 = ee.Dictionary({
-  'GOES-East': 'NOAA/GOES/16/FDCF',
-  'GOES-West': 'NOAA/GOES/17/FDCF',
+var goesFire_IDs = ee.Dictionary({
+  'GOES-East': ee.List([ee.ImageCollection('NOAA/GOES/16/FDCF')]),
+  'GOES-West': ee.List([ee.ImageCollection('NOAA/GOES/17/FDCF'),
+    ee.ImageCollection('NOAA/GOES/18/FDCF')])
 });
 
-var goesRGB_ID_1618 = ee.Dictionary({
-  'GOES-East': 'NOAA/GOES/16/MCMIPF',
-  'GOES-West': 'NOAA/GOES/18/MCMIPF',
-});
-
-var goesFire_ID_1618 = ee.Dictionary({
-  'GOES-East': 'NOAA/GOES/16/FDCF',
-  'GOES-West': 'NOAA/GOES/18/FDCF',
+var goesBreakPts = ee.Dictionary({
+  'GOES-East': ee.FeatureCollection([
+      ee.Feature(null,{idx: 0, breakPt: ee.Date('2017-07-10')})
+    ]),
+  'GOES-West': ee.FeatureCollection([
+      ee.Feature(null,{idx: 0, breakPt: ee.Date('2018-08-28')}),
+      ee.Feature(null,{idx: 1, breakPt: ee.Date('2023-01-04')})
+    ])
 });
 
 var goes_sDate = ee.Dictionary({
   'GOES-East': 'July 10, 2017',
-  'GOES-West': 'August 28, 2018',
+  'GOES-West': 'August 28, 2018'
 });
 
 // filter and calculate GOES RGB
@@ -172,9 +174,9 @@ var applyScaleAndOffset = function(image,bandName) {
   return image.select(bandName).multiply(scale).add(offset);
 };
 
-var filterGOESday = function(year,month,day,goesRGB_ID) {
+var filterGOESday = function(year,month,day,goesRGB_col) {
   var inDate = ee.Date.fromYMD(year,month,day);
-  var goesDay = ee.ImageCollection(goesRGB_ID)
+  var goesDay = ee.ImageCollection(goesRGB_col)
     .filterDate(inDate.advance(5,'hour'),inDate.advance(28,'hour'));
   
   var goesHr = goesDay.filter(ee.Filter.calendarRange(0,3,'hour'))
@@ -187,9 +189,9 @@ var filterGOESday = function(year,month,day,goesRGB_ID) {
   return goesHr;
 };
 
-var getGOESdates = function(year,month,day,goesRGB_ID) {
+var getGOESdates = function(year,month,day,goesRGB_col) {
   
-  var goes_dates = filterGOESday(year,month,day,goesRGB_ID).toList(50).map(function(image) {
+  var goes_dates = filterGOESday(year,month,day,goesRGB_col).toList(50).map(function(image) {
     return ee.String(ee.Date(ee.Image(image).get('system:time_start'))
       .format('Y-MM-dd HH:mm'));
   });
@@ -204,12 +206,12 @@ var getGOESdateFirst = function(goesDates) {
   })).get(0);
 };
 
-var getGOESrgb = function(dateTime,goesRGB_ID,goesFire_ID) {
+var getGOESrgb = function(dateTime,goesRGB_col,goesFire_col) {
   dateTime = ee.Date.parse({format: 'Y-MM-dd HH:mm',date: dateTime});
   var hour = dateTime.get('hour');
   var maxVis = maxVisHrGOES.getNumber(hour);
   
-  var goesHr = ee.ImageCollection(goesRGB_ID)
+  var goesHr = ee.ImageCollection(goesRGB_col)
     .filterDate(dateTime,dateTime.advance(1,'hour')).first();
     
   var red = applyScaleAndOffset(goesHr,'CMI_C02').rename('RED');
@@ -226,7 +228,7 @@ var getGOESrgb = function(dateTime,goesRGB_ID,goesFire_ID) {
   
   var goesRGB = red.addBands(green).addBands(blue);
   
-  var goesFireCol = ee.ImageCollection(goesFire_ID)
+  var goesFireCol = ee.ImageCollection(goesFire_col)
     .filterDate(dateTime,dateTime.advance(1,'hour')).select('Power');
     
   var goesFire = ee.Algorithms.If(goesFireCol.size().gt(0),
@@ -236,12 +238,12 @@ var getGOESrgb = function(dateTime,goesRGB_ID,goesFire_ID) {
     .blend(ee.Image(goesFire).visualize({palette: 'red', opacity: 0.4}));
 };
 
-var getGOESrgb_mask = function(dateTime,goesRGB_ID,goesFire_ID) {
+var getGOESrgb_mask = function(dateTime,goesRGB_col,goesFire_col) {
   dateTime = ee.Date.parse({format: 'Y-MM-dd HH:mm',date: dateTime});
   var hour = dateTime.get('hour');
   var maxVis = maxVisHrGOES.getNumber(hour);
   
-  var goesHr = ee.ImageCollection(goesRGB_ID)
+  var goesHr = ee.ImageCollection(goesRGB_col)
     .filterDate(dateTime,dateTime.advance(1,'hour')).first();
     
   var red = applyScaleAndOffset(goesHr,'CMI_C02').rename('RED');
@@ -262,7 +264,7 @@ var getGOESrgb_mask = function(dateTime,goesRGB_ID,goesFire_ID) {
   var goesRGB = red.addBands(green).addBands(blue)
     .multiply(goesMask).unmask(0);
   
-  var goesFireCol = ee.ImageCollection(goesFire_ID)
+  var goesFireCol = goesFire_col
     .filterDate(dateTime,dateTime.advance(1,'hour')).select('DQF');
     
   var goesFire = ee.Algorithms.If(goesFireCol.size().gt(0),
@@ -849,13 +851,16 @@ runButton.onClick(function() {
     var inDay = inDate.get('day');
     var satName = getSat(timeModePanel);
     
-    var cutoffDate = ee.Date('2020-01-24');
-    var dateDiff = inDate.difference(cutoffDate,'day');
-    
-    var goesRGB_ID = ee.Dictionary(ee.Algorithms.If(dateDiff.lt(0),goesRGB_ID_1617,goesRGB_ID_1618))
-      .get(satName).getInfo();
-    var goesFire_ID = ee.Dictionary(ee.Algorithms.If(dateDiff.lt(0),goesFire_ID_1617,goesFire_ID_1618))
-      .get(satName).getInfo();
+    var goesBreakPt = goesBreakPts.get(satName);
+    var goesDateDiff = ee.FeatureCollection(goesBreakPt)
+      .map(function(breakPt) {
+        var dateDiff = inDate.difference(breakPt.get('breakPt'),'day');
+        return breakPt.set('dateDiff',dateDiff);
+    });
+ 
+    var goesIdx = goesDateDiff.filter(ee.Filter.gt('dateDiff',0)).first().getNumber('idx');
+    var goesRGB_col = ee.ImageCollection(ee.List(goesRGB_IDs.get(satName)).get(goesIdx));
+    var goesFire_col = ee.ImageCollection(ee.List(goesFire_IDs.get(satName)).get(goesIdx));
       
     var hmsDay = getHMS(inYear,inMonth,inDay);
     var fireDay = getFire(inYear,inMonth,inDay);
@@ -883,8 +888,8 @@ runButton.onClick(function() {
     var smokeText = getSmokeText(inYear,inMonth,inDay);
     map0.add(smokeStats); map0.add(smokeText);
     
-    var goesDates = getGOESdates(inYear,inMonth,inDay,goesRGB_ID);
-   
+    var goesDates = getGOESdates(inYear,inMonth,inDay,goesRGB_col);
+
     var dateText = ui.Label(ee.String('Date: ').cat(ee.Date(inDate).format('Y-MM-dd')).getInfo(),
       {fontSize: '16px', fontWeight: 'bold', margin: '8px 8px 0px 8px'});
     var satCheckbox = ui.Checkbox({label: 'See ' + satName + ' RGB Images',
@@ -930,7 +935,7 @@ runButton.onClick(function() {
         map1.setControlVisibility({mapTypeControl: false, fullscreenControl: false, layerList: false});
         
         var goesRGBcol = ee.ImageCollection(goesDates.map(function(dateTime) {
-            return getGOESrgb_mask(dateTime,goesRGB_ID,goesFire_ID);
+            return getGOESrgb_mask(dateTime,goesRGB_col,goesFire_col);
           }));
 
         var goesLabel = ui.Label(satName + ' RGB Images', {fontSize: '15px', margin: '0 0 6px 0', fontWeight: 'bold'});
@@ -964,7 +969,7 @@ runButton.onClick(function() {
           }
           
           var inDateTime = hrSelect.getValue();
-          var goesRGB = getGOESrgb(inDateTime,goesRGB_ID,goesFire_ID);
+          var goesRGB = getGOESrgb(inDateTime,goesRGB_col,goesFire_col);
           
           var goesLayer = ui.Map.Layer(goesRGB,{},'RGB',true,1).setOpacity(0.88);
           map1.layers().set(0, goesLayer);

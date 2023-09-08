@@ -21,7 +21,7 @@ The [HMS Smoke Explorer](https://globalfires.earthengine.app/view/hms-smoke) all
 | [MODIS MAIAC Aerosol Optical Depth (AOD)](https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD19A2_GRANULES) | 2000/02-present | 1 km |
 | [ECMWF/CAMS AOD, PM<sub>2.5</sub>](https://developers.google.com/earth-engine/datasets/catalog/ECMWF_CAMS_NRT) | 2016/06-present | 0.4° |
 | [GOES-16/East](https://developers.google.com/earth-engine/datasets/tags/goes-16) | 2017/07-present | 2 km |
-| [GOES-17/West](https://developers.google.com/earth-engine/datasets/tags/goes-17) | 2018/12-present | 2 km |
+| [GOES-17/West](https://developers.google.com/earth-engine/datasets/tags/goes-17) | 2018/12-2023/01 | 2 km |
 | [GOES-18/West](https://developers.google.com/earth-engine/datasets/tags/goes-18) | 2022/10-present | 2 km |
 
 ### HMS on EE
@@ -69,7 +69,7 @@ Notes:
 * GOES-16/East became operational on December 18, 2017, GOES-17/West on February 12, 2019, and GOES-18/West on January 4, 2023 (replacing GOES-17/West). Note these dates when selecting the GOES RGB images.
 
 ### HMS Quality Control
-Number of HMS polygons in each year, and how many are invalid after processing in R (up to July 28, 2023).
+Number of HMS polygons in each year, and how many are invalid after processing in R (up to Sep 6, 2023).
 | Year | Total | Valid | Invalid | 
 | :--- | :--- | :--- | :--- | 
 2005 | 6296 | 6291 | 5
@@ -90,7 +90,7 @@ Number of HMS polygons in each year, and how many are invalid after processing i
 2020 | 45440 | 45438 | 2
 2021 | 27573 | 27572 | 1
 2022 | 21906 | 21904 | 2
-2023 | 12944 | 12943 | 1
+2023 | 15024 | 15023 | 1 
 
 ### Updates
 * July 2023: updated R code to process HMS from rgdal to sf, code is now more inclusive of out-of-bounds polygons and attempts to fix some bad geometries (unclosed rings and out-of-bounds coordinates) but excludes polygons with crossed edges as sf cannot fix them; added QA flags; added jump to latest button
