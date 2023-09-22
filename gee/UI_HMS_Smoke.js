@@ -310,8 +310,8 @@ var hmsStats = ee.ImageCollection(projFolder + 'HMS/HMS_Stats');
 var getSmokeTSChart = function(year,hmsCat) {
   
   var smokeExtYr = hmsExtent.filter(ee.Filter.eq('Year',year));
-  var smokeExtHistYrs = hmsExtent.filter(ee.Filter.gte('Year',2005))
-    .filter(ee.Filter.lte('Year',2022));
+  var smokeExtHistYrs = hmsExtent.filter(ee.Filter.gte('Year',sYear+1))
+    .filter(ee.Filter.lte('Year',eYear));
   
   var nDay = ee.Date.fromYMD(year,12,31)
     .difference(ee.Date.fromYMD(year,1,1),'day').add(1);
@@ -323,19 +323,23 @@ var getSmokeTSChart = function(year,hmsCat) {
     var hmsDay_historicalYrs = smokeExtHistYrs.filter(ee.Filter.eq('JDay',JDay))
       .filter(ee.Filter.eq('Density',hmsCat));
     
+    var historicalPer = hmsDay_historicalYrs.reduceColumns(ee.Reducer.percentile([25,75]),['Area']);
+
     return ee.Feature(null, {
       Day: JDay,
       Date: ee.Date.fromYMD(year,1,1).advance(ee.Number(JDay).subtract(1),'day'),
       Current: hmsDay_currentYr.getNumber('Area'),
       Historical: hmsDay_historicalYrs.aggregate_mean('Area'),
+      Historical25: historicalPer.getNumber('p25'),
+      Historical75: historicalPer.getNumber('p75'),
       Valid: hmsDay_currentYr.get('Valid')
     });
   }));
   
   smokeExt = smokeExt.filter(ee.Filter.eq('Valid',true));
   
-  var smokeChart = ui.Chart.feature.byFeature(smokeExt,'Date',['Current','Historical'])
-    .setSeriesNames(['Current','Historical (2006-2022)'])
+  var smokeChart = ui.Chart.feature.byFeature(smokeExt,'Date',['Current','Historical','Historical25','Historical75'])
+    .setSeriesNames(['Current Year','Average (2006-2022)','p25 (2006-2022)','p75 (2006-2022)'])
     .setOptions({
       title: 'Smoke Plumes',
       titleTextStyle: {fontSize: '13.5'},
@@ -352,8 +356,12 @@ var getSmokeTSChart = function(year,hmsCat) {
           max: ee.Date.fromYMD(year,12,31).millis().getInfo()
         },
       },
-      lineWidth: 1.5,
-      series: {0: {color: '#333'}, 1: {color: 'red'}},
+      series: {
+        0: {color: '#333',lineWidth: 1.5},
+        1: {color: 'red',lineWidth: 1},
+        2: {color: '#FF4433',lineWidth: 0.75},
+        3: {color: 'purple',lineWidth: 0.75},
+      },
       legend: {textStyle: {fontSize: 10.5}},
       height: '220px',
     });
@@ -941,6 +949,7 @@ runButton.onClick(function() {
     
     map0.add(satPanel);
     
+    // Display GOES images and animations in split panel:
     satCheckbox.onChange(function(checked) {
       satCheckbox.setDisabled(true);
       map0.remove(smokeStats); map0.remove(smokeText);
@@ -1008,7 +1017,6 @@ runButton.onClick(function() {
           
           var zoomBox = ui.Panel({style: {margin: '0'}});
            
-          // Add a label and the zoom box map to the default map.
           var instructions = ui.Label('Click the map on the right to generate an animation of GOES RGB images.', {
             stretch: 'both',
             textAlign: 'center'
@@ -1026,7 +1034,6 @@ runButton.onClick(function() {
           if (goesCounter > 1) {map1.remove(panel)}
           map1.add(panel);
           
-          // Update the center of the zoom box map when the base map is clicked.
           map1.onClick(function(coords) {
             centerZoomBox(coords.lon, coords.lat);
           });
@@ -1045,7 +1052,6 @@ runButton.onClick(function() {
             
             var region = ee.Geometry.Rectangle([w,s,e,n],null,false);
             
-            // Define video parameters.
             var VID_params = {
               dimensions: 512,
               region: region,
@@ -1069,6 +1075,7 @@ runButton.onClick(function() {
     });
   }
   
+  // By year mode:
   if (viewMode == 'By Year') {
     var hmsStatsYr = hmsStats.filter(ee.Filter.eq('Year',inYear)).first();
     map0.addLayer(hmsStatsYr.select('SmokeDays_Light').selfMask(),
@@ -1150,8 +1157,8 @@ runButton.onClick(function() {
     });
   }
   
+  // Display smoke timeseries of areal extent:
   if (viewMode != 'Summary') {
-    // Display times series chart:
     var tsChart = getSmokeTSChart(inYear,'Total');
     controlPanel.add(tsChart);
     
@@ -1174,6 +1181,7 @@ runButton.onClick(function() {
     });
   }
   
+  // Summary mode:
   if (viewMode == 'Summary') {
     var hmsYrAvg = hmsStats.filter(ee.Filter.gt('Year',sYear))
       .filter(ee.Filter.lte('Year',eYear)).mean();
@@ -1200,13 +1208,14 @@ runButton.onClick(function() {
     var chartStatsTSTitle = ui.Label('Smoke Statistics', {fontSize: '18px', fontWeight: 'bold', margin: '3px 3px -3px 8px'});
     var chartStatsTSInfo = ui.Label('(Click on map...)', {fontSize: '14px', color: '#666', margin: '18px 3px 10px 8px'});
     chartHrsTSPanel.add(chartStatsTSTitle).add(chartStatsTSInfo);
-    
+   
     map0.onClick(function(coords) {
       chartHrsTSPanel.clear();
       
       var point = ee.Geometry.Point([coords.lon,coords.lat]);
       
       var smokeDays = hmsStats.filter(ee.Filter.gt('Year',sYear))
+        .filter(ee.Filter.lte('Year',eYear))
         .select(['SmokeDays_Light','SmokeDays_Medium','SmokeDays_Heavy'],['b1','b2','b3'])
         .map(function(x) {
           return x.reduceRegions({
@@ -1241,6 +1250,7 @@ runButton.onClick(function() {
         });
         
       var smokeHrs = hmsStats.filter(ee.Filter.gt('Year',sYear))
+        .filter(ee.Filter.lte('Year',eYear))
         .select(['Duration_Light','Duration_Medium','Duration_Heavy'],
           ['b1','b2','b3'])
         .map(function(x) {
