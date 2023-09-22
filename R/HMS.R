@@ -1,10 +1,11 @@
 # ====================================================
-# Process HMS daily files, convert to yearly files
+# HMS.R
+# ----------------------------------------------------
+# process daily HMS shapefiles and combine by year
 # ====================================================
-# last updated: September 7, 2023
+# last updated: September 22, 2023
 # Tianjia Liu (tianjia.liu@columbia.edu)
 # ----------------------------------------------------
-
 library("raster"); library("sf"); library("stringr")
 setwd("/Users/TLiu/Google Drive/My Drive/HMS_ISD/HMS/Smoke_Polygons/")
 

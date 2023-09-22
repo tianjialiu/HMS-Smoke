@@ -10,7 +10,7 @@ var firms = ee.ImageCollection("FIRMS"),
 // *****************************************************************
 /*
 // @author Tianjia Liu (tianjia.liu@columbia.edu)
-// Last updated: September 8, 2023
+// Last updated: September 22, 2023
 
 // Purpose: visualize HMS smoke with MODIS active fires
 // and aerosol optical depth
@@ -29,14 +29,14 @@ var projFolder = 'projects/GlobalFires/';
 var sYear = 2005;
 var eYear = 2022;
 var nrtYear = eYear + 1;
-var nrtEnd = '2023-09-06';
+var nrtEnd = '2023-09-20';
 
 var region = ee.Geometry.Rectangle([-180,0,0,90],null,false);
 maiac = maiac.filterBounds(region);
 
 // filter HMS smoke
-var smokeLabels = ['Unspecified','Light','Medium','Heavy'];
-var colPal_smoke = ['#000000','#E7D516','#DAA520','#964B00'];
+var smokeLabels = ['Light','Medium','Heavy'];
+var colPal_smoke = ['#E7D516','#DAA520','#964B00'];
 
 var applyHMScolor = function(hmsDay,hmsCat,hmsColor) {
   return hmsDay.filter(ee.Filter.eq('Density',hmsCat))
@@ -49,13 +49,11 @@ var getHMS = function(year,month,day) {
   var hmsDay = hmsYr.filter(ee.Filter.eq('Month',month))
     .filter(ee.Filter.eq('Day',day));
   
-  var hmsDayUnSpec = applyHMScolor(hmsDay,'Unspecified',colPal_smoke[0]);
-  var hmsDayLight = applyHMScolor(hmsDay,'Light',colPal_smoke[1]);
-  var hmsDayMedium = applyHMScolor(hmsDay,'Medium',colPal_smoke[2]);
-  var hmsDayHeavy = applyHMScolor(hmsDay,'Heavy',colPal_smoke[3]);
+  var hmsDayLight = applyHMScolor(hmsDay,'Light',colPal_smoke[0]);
+  var hmsDayMedium = applyHMScolor(hmsDay,'Medium',colPal_smoke[1]);
+  var hmsDayHeavy = applyHMScolor(hmsDay,'Heavy',colPal_smoke[2]);
   
-  return hmsDayUnSpec.merge(hmsDayLight)
-    .merge(hmsDayMedium).merge(hmsDayHeavy);
+  return hmsDayLight.merge(hmsDayMedium).merge(hmsDayHeavy);
 };
 
 // filter MODIS active fires
@@ -287,7 +285,7 @@ var getSmokeStats = function(year,month,day) {
   var smokeExtentTitle = ui.Label('Smoke Extent',
     {fontWeight:'bold', fontSize: '18px', margin: '3px 8px 2px 8px'});
   
-  hmsDayExtent = ee.List(['Unspecified','Light','Medium','Heavy','Total'])
+  hmsDayExtent = ee.List(['Light','Medium','Heavy','Total'])
     .map(function(hmsCat) {return hmsDayExtent.filter(ee.Filter.eq('Density',hmsCat)).first()});
   hmsDayExtent = ee.FeatureCollection(hmsDayExtent);
   
@@ -299,7 +297,7 @@ var getSmokeStats = function(year,month,day) {
     widgets: [smokeExtentTitle,smokeExtent],
     style: {
       width: '250px',
-      height: '200px',
+      height: '180px',
       position: 'bottom-right'
     }
   });
@@ -312,7 +310,7 @@ var hmsStats = ee.ImageCollection(projFolder + 'HMS/HMS_Stats');
 var getSmokeTSChart = function(year,hmsCat) {
   
   var smokeExtYr = hmsExtent.filter(ee.Filter.eq('Year',year));
-  var smokeExtHistYrs = hmsExtent.filter(ee.Filter.gte('Year',2010))
+  var smokeExtHistYrs = hmsExtent.filter(ee.Filter.gte('Year',2005))
     .filter(ee.Filter.lte('Year',2022));
   
   var nDay = ee.Date.fromYMD(year,12,31)
@@ -337,7 +335,7 @@ var getSmokeTSChart = function(year,hmsCat) {
   smokeExt = smokeExt.filter(ee.Filter.eq('Valid',true));
   
   var smokeChart = ui.Chart.feature.byFeature(smokeExt,'Date',['Current','Historical'])
-    .setSeriesNames(['Current','Historical (2010-2022)'])
+    .setSeriesNames(['Current','Historical (2006-2022)'])
     .setOptions({
       title: 'Smoke Plumes',
       titleTextStyle: {fontSize: '13.5'},
@@ -449,6 +447,38 @@ var infoPanel = function() {
   var noaaLabel = ui.Label('[NOAA HRRR-Smoke]', {margin: '3px 5px 3px 3px', fontSize: '12.5px', color: '#5886E8'}, 'https://hwp-viz.gsd.esrl.noaa.gov/smoke/index.html');
   var epaLabel = ui.Label('[EPA AirNow]', {margin: '3px 5px 3px 3px', fontSize: '12.5px', color: '#5886E8'}, 'https://fire.airnow.gov/#');
   
+  var introDetails = ui.Label('',{margin: '5px 20px 0px 8px',fontSize: '12px', color: '#999'});
+  var introDetailsText = 'The HMS smoke product should be used with caution as an indicator of surface smoke presence. We find that inclusion of HMS light plumes leads to inflation of the number and trend in smoke days. Outside the western U.S. and Alaska, we find no to low agreement with ground observations and model estimates and often low separation of PM2.5 levels on smoke and non-smoke days. We recommend careful evaluation of biases in HMS for air quality and public health studies. Here we also gap-fill polygons with unspecified smoke density from 2005-2010 using random forest classification. Details on our evaluation of HMS with other datasets and on methods for gap-filling smoke polygons with unspecified density can be found in our paper.';
+  
+  var introDetailsLink = ui.Label('', {margin: '22px 5px 3px 10px', fontSize: '12.5px', color: '#5886E8'}, 'https://doi.org/10.31223/X51963');
+  var introDetailsLinkText = '[Liu et al., in review]';
+  
+  var hideIntroMode = true;
+  var hideShowIntroButton = ui.Button({
+    label: 'Show Details',
+    onClick: function() {
+      hideIntroMode = !hideIntroMode;
+      hideShowIntroButton.setLabel(hideIntroMode ? 'Show Details': 'Hide Details');
+      if (!hideIntroMode) {
+        introDetails.setValue(introDetailsText);
+        introDetailsLink.setValue(introDetailsLinkText);
+      } else {
+        introDetails.setValue('');
+        introDetailsLink.setValue('');
+      }
+    },
+      style: {padding: '0', margin: '8px 0 0 8px'}
+  });
+  
+   var introWrapper = ui.Panel({
+    widgets: [ui.Panel([hideShowIntroButton,introDetailsLink],
+        ui.Panel.Layout.Flow('horizontal'), {stretch: 'horizontal'}),
+      introDetails],
+    style: {
+      padding: '0',
+    }
+  });
+  
   var headDivider = ui.Panel(ui.Label(),ui.Panel.Layout.flow('horizontal'),
     {margin: '12px 0px 5px 0px',height:'1px',border:'0.75px solid black',stretch:'horizontal'});
    
@@ -457,7 +487,7 @@ var infoPanel = function() {
   return ui.Panel([
     hmsToolLabel, infoLabel,
     ui.Panel([dataLabel, codeLabel, noaaLabel, epaLabel], ui.Panel.Layout.Flow('horizontal'), {stretch: 'horizontal'}),
-    headDivider, inputSectionLabel
+    introWrapper, headDivider, inputSectionLabel
   ]);
 };
 
@@ -1085,7 +1115,6 @@ runButton.onClick(function() {
         {fontSize: '14px', margin: '5px 3px -5px 8px'});
       
       var smokeHrsList = ee.FeatureCollection([
-        ee.Feature(null,{HMS:'Unspecified',Duration:smokeHrs.getNumber('Unspecified')}),
         ee.Feature(null,{HMS:'Light',Duration:smokeHrs.getNumber('Light')}),
         ee.Feature(null,{HMS:'Medium',Duration:smokeHrs.getNumber('Medium')}),
         ee.Feature(null,{HMS:'Heavy',Duration:smokeHrs.getNumber('Heavy')}),
@@ -1101,7 +1130,6 @@ runButton.onClick(function() {
             0: {color: colPal_smoke[0]},
             1: {color: colPal_smoke[1]},
             2: {color: colPal_smoke[2]},
-            3: {color: colPal_smoke[3]}
           },
           legend: {textStyle: {fontSize: '12.5'}},
           height: '190px'
@@ -1124,7 +1152,7 @@ runButton.onClick(function() {
     
     var hmsCatLabel = ui.Label('Select Density:', {fontSize: '14.5px', margin: '8px 8px 8px 20px'});
     var hmsCatSelect = ui.Select({
-      items: ['Total','Light','Medium','Heavy','Unspecified'],
+      items: ['Total','Light','Medium','Heavy'],
       value: 'Total',
       style: {margin: '3px 65px 5px 8px', stretch: 'horizontal'}
     });
@@ -1232,7 +1260,6 @@ runButton.onClick(function() {
           },
           height: '205px',
           series: {
-            0: {color: colPal_smoke[0]},
             1: {color: colPal_smoke[1]},
             2: {color: colPal_smoke[2]},
             3: {color: colPal_smoke[3]},
