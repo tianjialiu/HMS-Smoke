@@ -60,7 +60,8 @@ QAFlag | QA flag | 0-5 (valid: 0 = good, 1 = coordinates adjusted, 2 = unclosed 
 IsMulti | Is the polygon a multipolygon? | 'Y' or 'N'
 fillFlag* | Flag on gap-filling smoke density | 0 = no gapfill, 1 = gapfill (model with AOD), 2 = gapfill (model without AOD)
 fillConf* | Confidence on gap-filled density based on predicted model outcomes from bootstrapping (polygons that did not need gap-filling are automatically labeled with a value of 1) | 0-1
-* only available for 2005-2010
+
+&ast; only relevant for 2005-2010, so HMS files for only those years have these columns on EE
 
 Notes:
 * The start and end time represent the time bounds of the satellite images used to draw the HMS polygons, not the actual persistence duration of the smoke plume
