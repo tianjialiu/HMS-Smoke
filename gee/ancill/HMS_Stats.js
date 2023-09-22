@@ -11,32 +11,40 @@ Map.setCenter(-100,45,0);
 
 var projFolder = 'projects/GlobalFires/';
 
-var getYrDuration = function(hmsYr, density) {
+var getDuration = function(hmsYr, density) {
   return hmsYr.filter(ee.Filter.eq('Density',density))
     .reduceToImage(['Duration'],'sum').rename(density)
     .reproject({crs:'EPSG:4326', scale:1000});
 };
 
-for (var inYear = 2005; inYear <= 2022; inYear++) {
-  var hmsYr = ee.FeatureCollection(projFolder + 'HMS/HMS_' + inYear);
-
-  var hmsUnSpec = getYrDuration(hmsYr,'Unspecified');
-  var hmsLight = getYrDuration(hmsYr,'Light');
-  var hmsMedium = getYrDuration(hmsYr,'Medium');
-  var hmsHeavy = getYrDuration(hmsYr,'Heavy');
-
-  var hmsYrDuration = hmsUnSpec.addBands(hmsLight)
-    .addBands(hmsMedium).addBands(hmsHeavy);
-    
-  hmsYrDuration = hmsYrDuration
-    .addBands(hmsYrDuration.reduce(ee.Reducer.sum()).rename('Total'));
-
-  var hmsSmokeDays = hmsYr
+var getSmokeDays = function(hmsYr, density) {
+  return hmsYr.filter(ee.Filter.inList('Density',density))
     .reduceToImage(['JDay'],ee.Reducer.countDistinct())
     .reproject({crs:'EPSG:4326', scale:1000})
     .rename('SmokeDays').toInt();
+};
+
+for (var inYear = 2005; inYear <= 2023; inYear++) {
+  var hmsYr = ee.FeatureCollection(projFolder + 'HMS/HMS_' + inYear);
+
+  var hmsLight = getDuration(hmsYr,'Light');
+  var hmsMedium = getDuration(hmsYr,'Medium');
+  var hmsHeavy = getDuration(hmsYr,'Heavy');
+
+  var hmsDuration = hmsLight.addBands(hmsMedium).addBands(hmsHeavy)
+    .rename(['Duration_Light','Duration_Medium','Duration_Heavy']);
+    
+  hmsDuration = hmsDuration
+    .addBands(hmsDuration.reduce(ee.Reducer.sum()).rename('Duration_Total'));
+
+  var hmsSmokeDays_Light = getSmokeDays(hmsYr,['Light','Medium','Heavy']);
+  var hmsSmokeDays_Medium = getSmokeDays(hmsYr,['Medium','Heavy']);
+  var hmsSmokeDays_Heavy = getSmokeDays(hmsYr,['Heavy']);
   
-  var hmsYrStats = hmsYrDuration.addBands(hmsSmokeDays)
+  var hmsSmokeDays = hmsSmokeDays_Light.addBands(hmsSmokeDays_Medium).addBands(hmsSmokeDays_Heavy)
+    .rename(['SmokeDays_Light','SmokeDays_Medium','SmokeDays_Heavy']);
+    
+  var hmsYrStats = hmsDuration.addBands(hmsSmokeDays)
     .set('Year',inYear)
     .set('system:time_start',ee.Date.fromYMD(inYear,1,1).millis());
 

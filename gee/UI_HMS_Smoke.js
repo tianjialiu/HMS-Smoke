@@ -509,8 +509,8 @@ var viewPanel = function() {
       if (selected == 'By Day') {setTimePanel('By Day')}
       if (selected == 'By Year') {setTimePanel('By Year')}
       if (selected == 'Summary') {
-        timeModePanel.add(ui.Label('Note: 2005 & 2023 are not included in the summary due to partial data availability.',
-          {fontSize: '12.5px', margin: '5px 8px 8px 8px', color: '#777'}));
+        timeModePanel.add(ui.Label('Note that 2005 & 2023 are not included in the summary due to partial data availability.',
+          {fontSize: '13px', margin: '5px 8px 8px 8px', color: '#777'}));
       }
     });
   
@@ -524,14 +524,14 @@ var getViewMode = function(viewPanel) {
 // Time panel
 var setTimePanel = function(viewMode) {
   
-  var dateInfoLabel = ui.Label('Filter HMS smoke and MODIS active fires by date.',
+  var dateInfoLabel = ui.Label('Filter HMS smoke and MODIS active fires by date. Note that 2005 & 2023 have partial data availability.',
     {fontSize: '13px', margin: '10px 8px 5px 8px', color: '#777'});
   
   var updateLabel = ui.Label('Date Range: (2005-08-05 to ' + nrtEnd +')',
     {margin: '-3px 20px 5px 8px', fontSize: '12.5px', color: '#777'});
     
   var yearLabel = ui.Label('2) Select Year:', {fontSize: '14.5px', margin: '8px 8px 8px 8px'});
-  var yearSlider = ui.Slider({min: sYear, max: eYear, value: 2017, step: 1});
+  var yearSlider = ui.Slider({min: sYear, max: nrtYear, value: 2017, step: 1});
   if (viewMode == 'By Day') {yearSlider.setMax(nrtYear);}
   yearSlider.style().set('stretch', 'horizontal');
   var yearPanel = ui.Panel([yearLabel, yearSlider], ui.Panel.Layout.Flow('horizontal'), {stretch: 'horizontal'});
@@ -1071,9 +1071,9 @@ runButton.onClick(function() {
   
   if (viewMode == 'By Year') {
     var hmsStatsYr = hmsStats.filter(ee.Filter.eq('Year',inYear)).first();
-    map0.addLayer(hmsStatsYr.select('SmokeDays').selfMask(),
+    map0.addLayer(hmsStatsYr.select('SmokeDays_Light').selfMask(),
       {min: 0, max: 70, palette: colPal.Grays},'Smoke Days',true,0.75);
-    map0.addLayer(hmsStatsYr.select('Total').selfMask(),
+    map0.addLayer(hmsStatsYr.select('Duration_Total').selfMask(),
       {min: 0, max: 500, palette: colPal.Sunset},'Duration',false,0.75);
     
     var BAyr = BA.filter(ee.Filter.calendarRange(inYear,inYear,'year'))
@@ -1088,13 +1088,13 @@ runButton.onClick(function() {
       style: {
         position: 'bottom-right',
         width: '280px',
-        height: '325px'
+        height: '363px'
       }});
     
     map0.add(chartHrsPanel);
     var chartStatsTitle = ui.Label('Smoke Statistics', {fontSize: '18px', fontWeight: 'bold', margin: '3px 3px 0px 8px'});
     var chartStatsInfo = ui.Label('(Click on map...)', {fontSize: '14px', color: '#666', margin: '8px 3px 0px 8px'});
-    var chartDaysTitle = ui.Label('Smoke Days', {fontSize: '18px', fontWeight: 'bold', margin: '3px 3px 0px 8px'});
+    var chartDaysTitle = ui.Label('Smoke Day', {fontSize: '18px', fontWeight: 'bold', margin: '3px 3px 0px 8px'});
     var chartHrsTitle = ui.Label('Max Smoke \'Duration\'', {fontSize: '18px', fontWeight: 'bold', margin: '3px 3px 0px 8px'});
     chartHrsPanel.add(chartStatsTitle).add(chartStatsInfo);
     
@@ -1109,15 +1109,19 @@ runButton.onClick(function() {
         scale: 1000
       }).first();
       
-      var totalSmokeDays = ui.Label('Total: ' + smokeHrs.getNumber('SmokeDays').round().getInfo() + ' days',
-        {fontSize: '14px', margin: '5px 3px 8px 8px'});
-      var totalSmokeHrs = ui.Label('Total: ' + smokeHrs.getNumber('Total').round().getInfo() + ' hours',
+      var totalSmokeDays_Light = ui.Label('All: ' + smokeHrs.getNumber('SmokeDays_Light').round().getInfo() + ' days', 
+        {fontSize: '14px', margin: '5px 3px 0px 8px'});
+      var totalSmokeDays_Medium = ui.Label('Medium & Heavy: ' + smokeHrs.getNumber('SmokeDays_Medium').round().getInfo() + ' days',
+        {fontSize: '14px', margin: '2px 3px 0px 8px'});
+      var totalSmokeDays_Heavy = ui.Label('Heavy Only: ' + smokeHrs.getNumber('SmokeDays_Heavy').round().getInfo() + ' days',
+        {fontSize: '14px', margin: '2px 3px 8px 8px'});
+      var totalSmokeHrs = ui.Label('Total: ' + smokeHrs.getNumber('Duration_Total').round().getInfo() + ' hours',
         {fontSize: '14px', margin: '5px 3px -5px 8px'});
       
       var smokeHrsList = ee.FeatureCollection([
-        ee.Feature(null,{HMS:'Light',Duration:smokeHrs.getNumber('Light')}),
-        ee.Feature(null,{HMS:'Medium',Duration:smokeHrs.getNumber('Medium')}),
-        ee.Feature(null,{HMS:'Heavy',Duration:smokeHrs.getNumber('Heavy')}),
+        ee.Feature(null,{HMS:'Light',Duration:smokeHrs.getNumber('Duration_Light')}),
+        ee.Feature(null,{HMS:'Medium',Duration:smokeHrs.getNumber('Duration_Medium')}),
+        ee.Feature(null,{HMS:'Heavy',Duration:smokeHrs.getNumber('Duration_Heavy')}),
       ]);
       
       var smokeHrsChart = ui.Chart.feature.byFeature(smokeHrsList,'HMS',['Duration'])
@@ -1139,7 +1143,8 @@ runButton.onClick(function() {
           + ' | Lat (y): ' + Math.round(coords.lat*100)/100,
         {fontSize: '14px', margin: '-10px 3px 0px 8px'});
     
-      chartHrsPanel.add(chartDaysTitle).add(totalSmokeDays)
+      chartHrsPanel.add(chartDaysTitle)
+        .add(totalSmokeDays_Light).add(totalSmokeDays_Medium).add(totalSmokeDays_Heavy)
         .add(chartHrsTitle).add(totalSmokeHrs)
         .add(smokeHrsChart).add(lonLatCoords);
     });
@@ -1170,11 +1175,12 @@ runButton.onClick(function() {
   }
   
   if (viewMode == 'Summary') {
-    var hmsYrAvg = hmsStats.filter(ee.Filter.gt('Year',sYear)).mean();
-    map0.addLayer(hmsYrAvg.select('SmokeDays').selfMask(),
+    var hmsYrAvg = hmsStats.filter(ee.Filter.gt('Year',sYear))
+      .filter(ee.Filter.lte('Year',eYear)).mean();
+    map0.addLayer(hmsYrAvg.select('SmokeDays_Light').selfMask(),
       {min: 0, max: 70, palette: colPal.Grays},'Smoke Days',true,0.75);
-    map0.addLayer(hmsYrAvg.select('Total').selfMask(),
-      {min: 0, max: 500, palette: colPal.Sunset},'Total',false,0.75);
+    map0.addLayer(hmsYrAvg.select('Duration_Total').selfMask(),
+      {min: 0, max: 500, palette: colPal.Sunset},'Duration',false,0.75);
     
     var BAavg = BA.filter(ee.Filter.calendarRange(sYear+1,eYear,'year'))
       .max().gt(0).selfMask();
@@ -1191,7 +1197,7 @@ runButton.onClick(function() {
       }});
     
     map0.add(chartHrsTSPanel);
-    var chartStatsTSTitle = ui.Label('Smoke Statistics', {fontSize: '18px', fontWeight: 'bold', margin: '3px 3px -8px 8px'});
+    var chartStatsTSTitle = ui.Label('Smoke Statistics', {fontSize: '18px', fontWeight: 'bold', margin: '3px 3px -3px 8px'});
     var chartStatsTSInfo = ui.Label('(Click on map...)', {fontSize: '14px', color: '#666', margin: '18px 3px 10px 8px'});
     chartHrsTSPanel.add(chartStatsTSTitle).add(chartStatsTSInfo);
     
@@ -1201,7 +1207,7 @@ runButton.onClick(function() {
       var point = ee.Geometry.Point([coords.lon,coords.lat]);
       
       var smokeDays = hmsStats.filter(ee.Filter.gt('Year',sYear))
-        .select('SmokeDays')
+        .select(['SmokeDays_Light','SmokeDays_Medium','SmokeDays_Heavy'],['b1','b2','b3'])
         .map(function(x) {
           return x.reduceRegions({
             collection: point,
@@ -1212,10 +1218,10 @@ runButton.onClick(function() {
         });
       
       var smokeDaysChart = ui.Chart.feature.byFeature(smokeDays,'Year')
-        .setSeriesNames(['Smoke Days'])
+        .setSeriesNames(['All','Medium & Heavy','Heavy Only'])
         .setChartType('LineChart')
         .setOptions({
-          title: 'Smoke Days',
+          title: 'Smoke Day Definition',
           titleTextStyle: {fontSize: '13.5'},
           fontSize: '12',
           vAxis: {
@@ -1227,12 +1233,16 @@ runButton.onClick(function() {
             format: '####', 
           },
           height: '205px',
-          legend: {position: 'none'},
-          series: {0: {color: '000000'}}
+          series: {
+            0: {color: colPal_smoke[0]},
+            1: {color: colPal_smoke[1]},
+            2: {color: colPal_smoke[2]}
+          }
         });
         
       var smokeHrs = hmsStats.filter(ee.Filter.gt('Year',sYear))
-        .select(smokeLabels,['b1','b2','b3','b4'])
+        .select(['Duration_Light','Duration_Medium','Duration_Heavy'],
+          ['b1','b2','b3'])
         .map(function(x) {
           return x.reduceRegions({
             collection: point,
@@ -1260,9 +1270,9 @@ runButton.onClick(function() {
           },
           height: '205px',
           series: {
+            0: {color: colPal_smoke[0]},
             1: {color: colPal_smoke[1]},
             2: {color: colPal_smoke[2]},
-            3: {color: colPal_smoke[3]},
           }
         });
         
