@@ -10,7 +10,7 @@ var firms = ee.ImageCollection("FIRMS"),
 // *****************************************************************
 /*
 // @author Tianjia Liu (tianjia.liu@columbia.edu)
-// Last updated: September 22, 2023
+// Last updated: September 25, 2023
 
 // Purpose: visualize HMS smoke with MODIS active fires
 // and aerosol optical depth
@@ -357,10 +357,10 @@ var getSmokeTSChart = function(year,hmsCat) {
         },
       },
       series: {
-        0: {color: '#333',lineWidth: 1.5},
-        1: {color: 'red',lineWidth: 1},
-        2: {color: '#FF4433',lineWidth: 0.75},
-        3: {color: 'purple',lineWidth: 0.75},
+        0: {color: '#333333',lineWidth: 1.5},
+        1: {color: '#F28C28',lineWidth: 1},
+        2: {color: '#FFC000',lineWidth: 0.75},
+        3: {color: '#FF0000',lineWidth: 0.75},
       },
       legend: {textStyle: {fontSize: 10.5}},
       height: '220px',
