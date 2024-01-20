@@ -3,7 +3,7 @@ NOAA's Hazard Mapping System ([HMS](https://www.ospo.noaa.gov/Products/land/hms.
 
 The [HMS Smoke Explorer](https://globalfires.earthengine.app/view/hms-smoke) allows end-users to visualize NOAA's Hazard Mapping System (HMS) smoke product, MODIS active fires and aerosol optical depth, and GOES-East/West RGB imagery. Since 2005, NOAA analysts manually inspect visible imagery (e.g. GOES, MODIS, VIIRS) and outline the extent of smoke across North America, classified into three density categories: light, medium, and heavy, to produce the HMS smoke product.
 
-![banner image](https://github.com/tianjialiu/HMS-Smoke/blob/main/docs/imgs/HMS_Smoke_Explorer.png)
+![banner image](https://github.com/tianjialiu/HMS-Smoke/blob/main/docs/imgs/HMSSmokeExplorer.png)
 
 ### Tool Capabilities
 <img src="https://github.com/tianjialiu/HMS-Smoke/blob/main/docs/imgs/smoke_animation_2017aug01.gif" width="512">
@@ -78,7 +78,7 @@ Notes:
 * GOES-16/East became operational on December 18, 2017, GOES-17/West on February 12, 2019, and GOES-18/West on January 4, 2023 (replacing GOES-17/West). Note these dates when selecting the GOES RGB images.
 
 ### HMS Quality Control
-Number of HMS polygons in each year, and how many are invalid after processing in R (up to Sep 20, 2023). The number of smoke polygons with gapfilled densities are also shown below.
+Number of HMS polygons in each year, and how many are invalid after processing in R (up to Jan 18, 2024). The number of smoke polygons with gapfilled densities are also shown below.
 | Year | Total | Valid | Invalid | Gapfill | 
 | :--- | :--- | :--- | :--- | :--- | 
 2005 | 6296 | 6291 | 5 | 6291 |
@@ -99,7 +99,8 @@ Number of HMS polygons in each year, and how many are invalid after processing i
 2020 | 45440 | 45438 | 2 | 0 |
 2021 | 27573 | 27572 | 1 | 0 |
 2022 | 21906 | 21904 | 2 | 0 |
-2023 | 15838 | 15837 | 1 | 0 |
+2023 | 20303 | 20302 | 1 | 0 |
+2024 | 235 | 235 | 0 | 0 |
 
 ### Gap-filling Unspecified Densities
 We used random forest classification to assign densities (light, medium, or heavy) to polygons with unspecified densities from 2005-2010. This procedure is described in [Liu et al. (in review)](https://doi.org/10.31223/X51963). Note that the code has recently been updated to use `sf` instead of `rgdal`, and additional processing has been done to fix more bad geometries. The code workflow uses EE to generate some input data for the random forest model (`HMS_Stack.js`,`HMS_AOD.js`). The rest of the workflow is in R with `RFmodel_prepare.R` to output a CSV table of data for all HMS polygons from 2005-2022, `RFmodel_withAOD.R` and `RFmodel_withoutAOD.R` to run the random forest classification models, `RFmodel_export.R` to output another CSV table now with the gap-filled densities, and finally `HMS_gapfill_shp.R` to rewrite HMS files from 2005-2010 with the gap-filled densities and associated flags.

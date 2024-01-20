@@ -2,7 +2,7 @@
 // HMS_Extent.js
 // --------------------------------------------------
 // @author Tianjia Liu (tianjia.liu@columbia.edu)
-// Last updated: September 22, 2023
+// Last updated: January 19, 2024
 // --------------------------------------------------
 // Calculate the daily areal extent of smoke polygons
 // by density category
@@ -10,7 +10,7 @@
 var projFolder = 'projects/GlobalFires/';
 
 var sYear = 2005;
-var eYear = 2023;
+var eYear = 2024;
 
 // filter HMS smoke
 var getSmokeExtent = function(hmsDay,hmsCat,YYYYMMDD) {

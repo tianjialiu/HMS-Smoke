@@ -2,7 +2,7 @@
 // HMS_Stats.js
 // --------------------------------------------------
 // @author Tianjia Liu (tianjia.liu@columbia.edu)
-// Last updated: September 22, 2023
+// Last updated: January 19, 2024
 // --------------------------------------------------
 // Output smoke days and "duration" as annual images
 // in EE Assets
@@ -24,7 +24,7 @@ var getSmokeDays = function(hmsYr, density) {
     .rename('SmokeDays').toInt();
 };
 
-for (var inYear = 2005; inYear <= 2023; inYear++) {
+for (var inYear = 2005; inYear <= 2024; inYear++) {
   var hmsYr = ee.FeatureCollection(projFolder + 'HMS/HMS_' + inYear);
 
   var hmsLight = getDuration(hmsYr,'Light');

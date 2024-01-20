@@ -10,7 +10,7 @@ var firms = ee.ImageCollection("FIRMS"),
 // *****************************************************************
 /*
 // @author Tianjia Liu (tianjia.liu@columbia.edu)
-// Last updated: September 25, 2023
+// Last updated: January 19, 2024
 
 // Purpose: visualize HMS smoke with MODIS active fires
 // and aerosol optical depth
@@ -27,9 +27,9 @@ var colPal = require('users/tl2581/packages:colorPalette.js');
 var projFolder = 'projects/GlobalFires/';
 
 var sYear = 2005;
-var eYear = 2022;
+var eYear = 2023;
 var nrtYear = eYear + 1;
-var nrtEnd = '2023-09-20';
+var nrtEnd = '2024-01-18';
 
 var region = ee.Geometry.Rectangle([-180,0,0,90],null,false);
 maiac = maiac.filterBounds(region);
@@ -517,7 +517,7 @@ var viewPanel = function() {
       if (selected == 'By Day') {setTimePanel('By Day')}
       if (selected == 'By Year') {setTimePanel('By Year')}
       if (selected == 'Summary') {
-        timeModePanel.add(ui.Label('Note that 2005 & 2023 are not included in the summary due to partial data availability.',
+        timeModePanel.add(ui.Label('Note that 2005 & 2024 are not included in the summary due to partial data availability.',
           {fontSize: '13px', margin: '5px 8px 8px 8px', color: '#777'}));
       }
     });
@@ -532,7 +532,7 @@ var getViewMode = function(viewPanel) {
 // Time panel
 var setTimePanel = function(viewMode) {
   
-  var dateInfoLabel = ui.Label('Filter HMS smoke and MODIS active fires by date. Note that 2005 & 2023 have partial data availability.',
+  var dateInfoLabel = ui.Label('Filter HMS smoke and MODIS active fires by date. Note that 2005 & 2024 have partial data availability.',
     {fontSize: '13px', margin: '10px 8px 5px 8px', color: '#777'});
   
   var updateLabel = ui.Label('Date Range: (2005-08-05 to ' + nrtEnd +')',
