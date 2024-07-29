@@ -78,7 +78,7 @@ Notes:
 * GOES-16/East became operational on December 18, 2017, GOES-17/West on February 12, 2019, and GOES-18/West on January 4, 2023 (replacing GOES-17/West). Note these dates when selecting the GOES RGB images.
 
 ### HMS Quality Control
-Number of HMS polygons in each year, and how many are invalid after processing in R (up to Jan 18, 2024). The number of smoke polygons with gapfilled densities are also shown below.
+Number of HMS polygons in each year, and how many are invalid after processing in R (up to July 28, 2024). The number of smoke polygons with gapfilled densities are also shown below.
 | Year | Total | Valid | Invalid | Gapfill | 
 | :--- | :--- | :--- | :--- | :--- | 
 2005 | 6296 | 6291 | 5 | 6291 |
@@ -100,12 +100,13 @@ Number of HMS polygons in each year, and how many are invalid after processing i
 2021 | 27573 | 27572 | 1 | 0 |
 2022 | 21906 | 21904 | 2 | 0 |
 2023 | 20303 | 20302 | 1 | 0 |
-2024 | 235 | 235 | 0 | 0 |
+2024 | 7778 | 7776 | 2 | 0 |
 
 ### Gap-filling Unspecified Densities
 We used random forest classification to assign densities (light, medium, or heavy) to polygons with unspecified densities from 2005-2010. This procedure is described in [Liu et al. (in review)](https://doi.org/10.31223/X51963). Note that the code has recently been updated to use `sf` instead of `rgdal`, and additional processing has been done to fix more bad geometries. The code workflow uses EE to generate some input data for the random forest model (`HMS_Stack.js`,`HMS_AOD.js`). The rest of the workflow is in R with `RFmodel_prepare.R` to output a CSV table of data for all HMS polygons from 2005-2022, `RFmodel_withAOD.R` and `RFmodel_withoutAOD.R` to run the random forest classification models, `RFmodel_export.R` to output another CSV table now with the gap-filled densities, and finally `HMS_gapfill_shp.R` to rewrite HMS files from 2005-2010 with the gap-filled densities and associated flags.
 
 ### Updates
+* July 2024: added VIIRS active fires to app; there seems to be some issues with recent active fire images in the Earth Engine / FIRMS dataset
 * September 2023: uploaded gap-filled HMS polygons from 2005-2010 and added related code; added ancillary code for preprocessing; added note about evaluation of the HMS smoke product in app
 * July 2023: updated R code to process HMS from rgdal to sf, code is now more inclusive of out-of-bounds polygons and attempts to fix some bad geometries (unclosed rings and out-of-bounds coordinates) but excludes polygons with crossed edges as sf cannot fix them; added QA flags; added jump to latest button
 * September 2020: added option to select GOES-East or GOES-West full disk imagery, added CAMS PM<sub>2.5</sub> and AOD
