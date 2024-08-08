@@ -1,7 +1,9 @@
 # HMS-Smoke
 NOAA's Hazard Mapping System ([HMS](https://www.ospo.noaa.gov/Products/land/hms.html)) Smoke Product
 
-The [HMS Smoke Explorer](https://globalfires.earthengine.app/view/hms-smoke) allows end-users to visualize NOAA's Hazard Mapping System (HMS) smoke product, MODIS active fires and aerosol optical depth, and GOES-East/West RGB imagery. Since 2005, NOAA analysts manually inspect visible imagery (e.g. GOES, MODIS, VIIRS) and outline the extent of smoke across North America, classified into three density categories: light, medium, and heavy, to produce the HMS smoke product. A corresponding HMS fire product (available from 2003) includes active fire detections from multiple satellites/sensors (e.g., MODIS, VIIRS, GOES, AVHRR) with quality control by the analyst.
+The [HMS Smoke Explorer](https://globalfires.earthengine.app/view/hms-smoke) allows end-users to visualize NOAA's Hazard Mapping System (HMS) smoke product, MODIS active fires and aerosol optical depth, and GOES-East/West RGB imagery. Since 2005, NOAA analysts manually inspect visible imagery (e.g. GOES, MODIS, VIIRS) and outline the extent of smoke across North America, classified into three density categories: light, medium, and heavy, to produce the HMS smoke product. A corresponding HMS fire product includes active fire detections from multiple satellites/sensors (e.g., MODIS, VIIRS, GOES, AVHRR) with quality control by the analyst.
+
+The latest date available in the HMS Smoke Explorer is August 5, 2024.
 
 ![banner image](https://github.com/tianjialiu/HMS-Smoke/blob/main/docs/imgs/HMSSmokeExplorer.png)
 
@@ -85,8 +87,8 @@ Notes:
 * HMS smoke polygons with bad geometries and throws an error in R (i.e. drawn as lines rather than polygons, edges crossing edges) have been removed.
 * GOES-16/East became operational on December 18, 2017, GOES-17/West on February 12, 2019, and GOES-18/West on January 4, 2023 (replacing GOES-17/West). Note these dates when selecting the GOES RGB images.
 
-### Quality Control
-Number of HMS polygons in each year, and how many are invalid after processing in R (up to August 5, 2024). The number of smoke polygons with gapfilled densities are also shown below.
+### Summary Stats and Quality Control
+Number of HMS polygons in each year, and how many are invalid after processing in R. The number of smoke polygons with gapfilled densities are also shown below.
 | Year | Total | Valid | Invalid | Gapfill | 
 | :--- | :--- | :--- | :--- | :--- | 
 2005 | 6296 | 6291 | 5 | 6291 |
@@ -132,35 +134,35 @@ JDaySat | Julian day or DOY (satellite) | 1-365
 HHMMSat | Hour/minute of active fire detection, UTC | HHMM
 Satellite | Satellite origin of active fire detection | e.g., 'GOES-EAST', 'GOES-WEST'
 Method | Method of active fire detection | ANALYSIS = manual input, other labels = automated
-Ecosystem | Ecosystem category derived from Global Land Cover Characterization data base (GLCC)[https://www.usgs.gov/centers/eros/science/usgs-eros-archive-land-cover-products-global-land-cover-characterization-glcc?qt-science_center_objects=0#qt-science_center_objects] | integer
-QAFlag | QA flag for satellite detection date/time | 0, 1 (valid: 0 = good, 1 = date/time filled with HMS filename)
+Ecosystem | Ecosystem category derived from the [Global Land Cover Characterization databse](https://www.usgs.gov/centers/eros/science/usgs-eros-archive-land-cover-products-global-land-cover-characterization-glcc?qt-science_center_objects=0#qt-science_center_objects) | integer
+QAFlag | QA flag for satellite detection date/time | 0, 1 (valid: 0 = good, 1 = date/time invalid and filled with HMS filename)
 
-### Quality Control
+### Summary Stats and Quality Control
 Number of HMS active fires from various satellites and missing days since April 1, 2003. MODIS includes Aqua and Terra, VIIRS includes S-NPP, NOAA-20, and NOAA-21, GOES includes GOES-East and GOES-West, and AVHRR includes NOAA-15 to NOAA-19 and METOP-A/B/2.
-| Year | Available Days | Total Active Fires | MODIS | VIIRS | GOES | AVHRR | Unspecified | 
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-2003 | 219 | 192264 | 56661 | 0 | 78422 | 41818 | 15363 |
-2004 | 362 | 531036 | 175776 | 0 | 134872 | 220388 | 0 |
-2005 | 360 | 651044 | 228018 | 0 | 192847 | 230179 | 0 |
-2006 | 360 | 285921 | 106080 | 0 | 72423 | 107418 | 0 |
-2007 | 242 | 211687 | 60655 | 0 | 37482 | 113550 | 0 |
-2008 | 366 | 481666 | 173927 | 0 | 86507 | 221232 | 0 |
-2009 | 363 | 270833 | 93843 | 0 | 44733 | 132257 | 0 |
-2010 | 365 | 330678 | 120127 | 0 | 63237 | 147314 | 0 |
-2011 | 365 | 520365 | 173393 | 0 | 127661 | 219238 | 16 |
-2012 | 366 | 433654 | 144903 | 0 | 104570 | 184181 | 0 |
-2013 | 365 | 465282 | 160832 | 0 | 118188 | 186195 | 67 |
-2014 | 364 | 359249 | 137836 | 343 | 74664 | 146406 | 0 |
-2015 | 363 | 322907 | 130829 | 0 | 67129 | 124938 | 11 |
-2016 | 362 | 326909 | 106902 | 14137 | 85019 | 120814 | 37 |
-2017 | 360 | 712701 | 177054 | 210278 | 148459 | 176910 | 0 |
-2018 | 362 | 1651738 | 130387 | 443825 | 990863 | 86653 | 10 |
-2019 | 362 | 2579824 | 101782 | 2143731 | 293974 | 40337 | 0 |
-2020 | 366 | 2493748 | 96669 | 2044170 | 352909 | 0 | 0 |
-2021 | 365 | 4166429 | 142898 | 2597493 | 1426038 | 0 | 0 |
-2022 | 365 | 3570747 | 80920 | 1834499 | 1655328 | 0 | 0 |
-2023 | 365 | 8196303 | 0 | 5036609 | 3159694 | 0 | 0 |
-2024 | 218 | 5823403 | 0 | 2773516 | 3049887 | 0 | 0 |
+| Year | Available Days | Total Active Fires | MODIS | VIIRS | GOES | AVHRR | Unspecified | Malformed Datetime (%) |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+2003 | 219 | 192264 | 56661 | 0 | 78422 | 41818 | 15363 | 0 |
+2004 | 362 | 531036 | 175776 | 0 | 134872 | 220388 | 0 | 0 |
+2005 | 360 | 651044 | 228018 | 0 | 192847 | 230179 | 0 | 0 |
+2006 | 360 | 285921 | 106080 | 0 | 72423 | 107418 | 0 | 0 |
+2007 | 242 | 211687 | 60655 | 0 | 37482 | 113550 | 0 | 0 |
+2008 | 366 | 481666 | 173927 | 0 | 86507 | 221232 | 0 | 0 |
+2009 | 363 | 270833 | 93843 | 0 | 44733 | 132257 | 0 | 0 |
+2010 | 365 | 330678 | 120127 | 0 | 63237 | 147314 | 0 | 0.02 |
+2011 | 365 | 520365 | 173393 | 0 | 127661 | 219238 | 16 | 0.03 |
+2012 | 366 | 433654 | 144903 | 0 | 104570 | 184181 | 0 | 0 |
+2013 | 365 | 465282 | 160832 | 0 | 118188 | 186195 | 67 | 0.01 |
+2014 | 364 | 359249 | 137836 | 343 | 74664 | 146406 | 0 | 0 |
+2015 | 363 | 322907 | 130829 | 0 | 67129 | 124938 | 11 | 0 |
+2016 | 362 | 326909 | 106902 | 14137 | 85019 | 120814 | 37 | 0.01 |
+2017 | 360 | 712701 | 177054 | 210278 | 148459 | 176910 | 0 | 0 |
+2018 | 362 | 1651738 | 130387 | 443825 | 990863 | 86653 | 10 | 0 |
+2019 | 362 | 2579824 | 101782 | 2143731 | 293974 | 40337 | 0 | 0 |
+2020 | 366 | 2493748 | 96669 | 2044170 | 352909 | 0 | 0 | 0 |
+2021 | 365 | 4166429 | 142898 | 2597493 | 1426038 | 0 | 0 | 0 |
+2022 | 365 | 3570747 | 80920 | 1834499 | 1655328 | 0 | 0 | 0 |
+2023 | 365 | 8196303 | 0 | 5036609 | 3159694 | 0 | 0 | 0 |
+2024 | 218 | 5823403 | 0 | 2773516 | 3049887 | 0 | 0 | 0 |
 
 ### Basic Code for Processing HMS Products
 <b>Folder Structure</b>:
