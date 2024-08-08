@@ -4,13 +4,13 @@
 # retrieve links to HMS text descriptions, 
 # combine into a yearly table
 # ====================================================
-# last updated: September 22, 2023
-# Tianjia Liu (tianjia.liu@columbia.edu)
+# last updated: August 7, 2024
+# Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
 library("rvest"); library("stringr")
 
 setwd("/Users/TLiu/Google Drive/My Drive/HMS_ISD/HMS/Smoke_Text/")
-xYears <- 2005:2023
+xYears <- 2005:2024
 
 hms_text <- "https://www.ssd.noaa.gov/PS/FIRE/DATA/SMOKE/"
 

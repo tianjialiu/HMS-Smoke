@@ -4,7 +4,7 @@ var maiac = ee.ImageCollection("MODIS/006/MCD19A2_GRANULES");
 // ==================================================
 // HMS_AOD.js
 // --------------------------------------------------
-// @author Tianjia Liu (tianjia.liu@columbia.edu)
+// @author Tianjia Liu (embrslab@gmail.com)
 // Last updated: September 22, 2023
 // --------------------------------------------------
 // Calculate the mean MODIS MAIAC AOD within each
@@ -44,7 +44,7 @@ var getAOD = function(inHMS) {
 
 for (var inYear = sYear; inYear <= eYear; inYear++) {
   for (var inMonth = 1; inMonth <= 12; inMonth++) {
-    var hmsYr = ee.FeatureCollection(projFolder + 'HMS/HMS_' + inYear)
+    var hmsYr = ee.FeatureCollection(projFolder + 'HMS/Smoke_Polygons/HMS_' + inYear)
       .filter(ee.Filter.eq('Month',inMonth))
       .sort('ID');
       

@@ -1,7 +1,7 @@
 // ==================================================
 // HMS_Stats.js
 // --------------------------------------------------
-// @author Tianjia Liu (tianjia.liu@columbia.edu)
+// @author Tianjia Liu (embrslab@gmail.com)
 // Last updated: January 19, 2024
 // --------------------------------------------------
 // Output smoke days and "duration" as annual images
@@ -25,7 +25,7 @@ var getSmokeDays = function(hmsYr, density) {
 };
 
 for (var inYear = 2005; inYear <= 2024; inYear++) {
-  var hmsYr = ee.FeatureCollection(projFolder + 'HMS/HMS_' + inYear);
+  var hmsYr = ee.FeatureCollection(projFolder + 'HMS/Smoke_Polygons/HMS_' + inYear);
 
   var hmsLight = getDuration(hmsYr,'Light');
   var hmsMedium = getDuration(hmsYr,'Medium');

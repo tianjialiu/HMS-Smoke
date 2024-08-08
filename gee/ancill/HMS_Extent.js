@@ -1,7 +1,7 @@
 // ==================================================
 // HMS_Extent.js
 // --------------------------------------------------
-// @author Tianjia Liu (tianjia.liu@columbia.edu)
+// @author Tianjia Liu (embrslab@gmail.com)
 // Last updated: January 19, 2024
 // --------------------------------------------------
 // Calculate the daily areal extent of smoke polygons
@@ -23,7 +23,7 @@ var getSmokeExtent = function(hmsDay,hmsCat,YYYYMMDD) {
 };
 
 var getSmokeStats = function(year,month,day) {
-  var hmsYr = ee.FeatureCollection(projFolder + 'HMS/HMS_' + year);
+  var hmsYr = ee.FeatureCollection(projFolder + 'HMS/Smoke_Polygons/HMS_' + year);
   
   var YYYYMMDD = ee.Number(year).multiply(1e4)
     .add(ee.Number(month).multiply(1e2)).add(day);

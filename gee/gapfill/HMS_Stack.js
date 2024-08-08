@@ -1,7 +1,7 @@
 // ==================================================
 // HMS_Stack.js
 // --------------------------------------------------
-// @author Tianjia Liu (tianjia.liu@columbia.edu)
+// @author Tianjia Liu (embrslab@gmail.com)
 // Last updated: September 22, 2023
 // --------------------------------------------------
 // Calculate the "overlap" fraction of each polygon
@@ -27,7 +27,7 @@ var getStackVal = function(inHMS) {
 };
 
 for (var inYear = sYear; inYear <= eYear; inYear++) {
-  var hmsYr = ee.FeatureCollection(projFolder + 'HMS/HMS_' + inYear);
+  var hmsYr = ee.FeatureCollection(projFolder + 'HMS/Smoke_Polygons/HMS_' + inYear);
   var hmsYrStack = ee.FeatureCollection(hmsYr).map(getStackVal)
     .sort('ID');
 

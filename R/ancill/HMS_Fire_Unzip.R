@@ -1,14 +1,14 @@
 # ====================================================
-# HMS_Unzip.R
+# HMS_Fire_Unzip.R
 # ----------------------------------------------------
-# unzip HMS smoke product zip files
+# unzip HMS fire product zip files
 # ====================================================
 # last updated: August 7, 2024
 # Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
 library(R.utils)
-homeDir <- "/Users/TLiu/Google Drive/My Drive/HMS_ISD/HMS/Smoke_Polygons/"
-xYears <- 2005:2024
+homeDir <- "/Users/TLiu/Google Drive/My Drive/HMS_ISD/HMS/Fire_Points/"
+xYears <- 2003:2024
 inMode <- "unzip"
 
 if (inMode == "unzip") {

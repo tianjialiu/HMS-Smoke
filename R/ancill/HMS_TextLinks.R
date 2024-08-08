@@ -4,14 +4,14 @@
 # combine all links to HMS text descriptions
 # into a single table
 # ====================================================
-# last updated: September 22, 2023
-# Tianjia Liu (tianjia.liu@columbia.edu)
+# last updated: August 7, 2024
+# Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
 library("stringr")
 
 setwd("/Users/TLiu/Google Drive/My Drive/HMS_ISD/HMS/Smoke_Text/")
 
-xYears <- 2005:2023
+xYears <- 2005:2024
 
 hmsLinksAll <- list()
 for (iYear in seq_along(xYears)) {

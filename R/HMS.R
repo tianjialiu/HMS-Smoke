@@ -3,13 +3,13 @@
 # ----------------------------------------------------
 # process daily HMS shapefiles and combine by year
 # ====================================================
-# last updated: September 22, 2023
-# Tianjia Liu (tianjia.liu@columbia.edu)
+# last updated: August 7, 2024
+# Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
 library("raster"); library("sf"); library("stringr")
 setwd("/Users/TLiu/Google Drive/My Drive/HMS_ISD/HMS/Smoke_Polygons/")
 
-xYears <- 2005:2023
+xYears <- 2005:2024
 
 nDaysLeap <- c(31,29,31,30,31,30,31,31,30,31,30,31)
 nDaysNonLeap <- c(31,28,31,30,31,30,31,31,30,31,30,31)
@@ -19,8 +19,8 @@ yj_hhmm <- function(inTime) {
 }
 
 shp_rowNames <- c("ID","Year","Month","Day","JDay",
-  "Start","End","StSec","EndSec",
-  "Duration","Density","Satellite","Area","QAFlag","IsMulti")
+                  "Start","End","StSec","EndSec",
+                  "Duration","Density","Satellite","Area","QAFlag","IsMulti")
 
 for (inYear in xYears) {
   shpYr <- list(); shpTally <- list(); shpMat <- list()
@@ -141,7 +141,7 @@ for (inYear in xYears) {
           }
           
           shpMat[[counter]] <- as.data.frame(inShp)[,shp_rowNames[-which(shp_rowNames=="Area")]]
-            
+          
           inShp <- inShp[st_is_valid(inShp),]
           
           # Projection

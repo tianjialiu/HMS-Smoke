@@ -5,7 +5,7 @@
 # densities as another CSV file
 # ====================================================
 # last updated: September 22, 2023
-# Tianjia Liu (tianjia.liu@columbia.edu)
+# Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
 setwd("/Users/TLiu/Google Drive/My Drive/HMS_ISD/HMS/")
 

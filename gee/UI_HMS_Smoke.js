@@ -1,9 +1,6 @@
 /**** Start of imports. If edited, may not auto-convert in the playground. ****/
 var maiac = ee.ImageCollection("MODIS/006/MCD19A2_GRANULES"),
-    cams = ee.ImageCollection("ECMWF/CAMS/NRT"),
-    firms = ee.ImageCollection("FIRMS"),
-    noaa20 = ee.ImageCollection("NASA/LANCE/NOAA20_VIIRS/C2"),
-    snpp = ee.ImageCollection("NASA/LANCE/SNPP_VIIRS/C2");
+    cams = ee.ImageCollection("ECMWF/CAMS/NRT");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 // *****************************************************************
 // =================================================================
@@ -11,8 +8,8 @@ var maiac = ee.ImageCollection("MODIS/006/MCD19A2_GRANULES"),
 // =================================================================
 // *****************************************************************
 /*
-// @author Tianjia Liu (tianjia.liu@columbia.edu)
-// Last updated: July 28, 2024
+// @author Tianjia Liu (embrslab@gmail.com)
+// Last updated: August 7, 2024
 
 // Purpose: visualize HMS smoke with MODIS active fires
 // and aerosol optical depth
@@ -31,7 +28,7 @@ var projFolder = 'projects/GlobalFires/';
 var sYear = 2005;
 var eYear = 2023;
 var nrtYear = eYear + 1;
-var nrtEnd = '2024-07-28';
+var nrtEnd = '2024-08-05';
 
 var region = ee.Geometry.Rectangle([-180,0,0,90],null,false);
 maiac = maiac.filterBounds(region);
@@ -46,7 +43,7 @@ var applyHMScolor = function(hmsDay,hmsCat,hmsColor) {
 };
 
 var getHMS = function(year,month,day) {
-  var hmsYr = ee.FeatureCollection(projFolder + 'HMS/HMS_' + year);
+  var hmsYr = ee.FeatureCollection(projFolder + 'HMS/Smoke_Polygons/HMS_' + year);
   
   var hmsDay = hmsYr.filter(ee.Filter.eq('Month',month))
     .filter(ee.Filter.eq('Day',day));
@@ -58,36 +55,13 @@ var getHMS = function(year,month,day) {
   return hmsDayLight.merge(hmsDayMedium).merge(hmsDayHeavy);
 };
 
-// filter MODIS active fires
 var getFire = function(year,month,day) {
-  var sDate = ee.Date.fromYMD(year,month,day);
-  var eDate = sDate.advance(1,'day');
+  var hmsFireYr = ee.FeatureCollection(projFolder + 'HMS/Fire_Points/HMS_Fire_' + year);
   
-  var firmsDay = firms.filterDate(sDate,eDate);
-  firmsDay = ee.FeatureCollection(ee.Algorithms.If(firmsDay.size().gt(0),
-    firmsDay.first().select('confidence').toInt().selfMask()
-      .reduceToVectors({geometryType: 'centroid',
-        eightConnected: false, geometry: region,
-        bestEffort: true, maxPixels: 1e10}),
-    ee.FeatureCollection([])));
+  var hmsFireDay = hmsFireYr.filter(ee.Filter.eq('Month',month))
+    .filter(ee.Filter.eq('Day',day));
   
-  var snppDay = snpp.filterDate(sDate,eDate);
-  snppDay = ee.FeatureCollection(ee.Algorithms.If(snppDay.size().gt(0),
-    snppDay.first().select('confidence').toInt().selfMask()
-      .reduceToVectors({geometryType: 'centroid',
-        eightConnected: false, geometry: region,
-        bestEffort: true, maxPixels: 1e10}),
-    ee.FeatureCollection([])));
-  
-  var noaa20Day = snpp.filterDate(sDate,eDate);
-  noaa20Day = ee.FeatureCollection(ee.Algorithms.If(noaa20Day.size().gt(0),
-    noaa20Day.first().select('confidence').toInt().selfMask()
-      .reduceToVectors({geometryType: 'centroid',
-        eightConnected: false, geometry: region,
-        bestEffort: true, maxPixels: 1e10}),
-    ee.FeatureCollection([])));  
-  
-  return firmsDay.merge(snppDay).merge(noaa20Day);
+  return hmsFireDay;
 };
 
 // filter MODIS AOD
@@ -480,7 +454,7 @@ var infoPanel = function() {
   var introDetailsText = 'The HMS smoke product should be used with caution as an indicator of surface smoke presence. We find that inclusion of HMS light plumes leads to inflation of the number and trend in smoke days. Outside the western U.S. and Alaska, we find no to low agreement with ground observations and model estimates and often low separation of PM2.5 levels on smoke and non-smoke days. We recommend careful evaluation of biases in HMS for air quality and public health studies. Here we also gap-fill polygons with unspecified smoke density from 2005-2010 using random forest classification. Details on our evaluation of HMS with other datasets and on methods for gap-filling smoke polygons with unspecified density can be found in our paper.';
   
   var introDetailsLink = ui.Label('', {margin: '22px 5px 3px 10px', fontSize: '12.5px', color: '#5886E8'}, 'https://doi.org/10.31223/X51963');
-  var introDetailsLinkText = '[Liu et al., in review]';
+  var introDetailsLinkText = '[Paper: Liu et al. (accepted, IJWF)]';
   
   var hideIntroMode = true;
   var hideShowIntroButton = ui.Button({
@@ -787,7 +761,7 @@ var getLegend = function(map) {
         'Extent and density of smoke plumes observed from satellite images (e.g. GOES, VIIRS, MODIS) by NOAA\'s HMS analysts, spatially aggregated by highest smoke density category', '6px'),
       getLegendDiscrete(smokeLabels,colPal_smoke),
       getLayerCheck(map,symbol.fire + ' Active Fires', true, 4, 0.65,
-        'Active fires detected by the MODIS and VIIRS sensors', '6px'),
+        'Sallite-derived active fires from the HMS fire product, including detections from MODIS, VIIRS, GOES, and AVHRR', '6px'),
       ui.Label('Aerosol Optical Depth',{fontWeight:'bold',fontSize:'16px',margin:'2px 3px 0px 8px'}),
       ui.Label('MODIS Terra/Aqua MAIAC and ECMWF/CAMS Aerosol Optical Depth (AOD) at 550 nm',{fontSize:'13px',color:'#666',margin:'2px 3px 4px 8px'}),
       ui.Label('Note: MAIAC AOD may not be up-to-date; CAMS AOD is available from June 21, 2016',{fontSize:'12.5px',color:'#999',margin:'0px 3px 8px 8px'}),

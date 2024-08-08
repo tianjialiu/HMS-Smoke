@@ -6,7 +6,7 @@
 # as a predictor
 # ====================================================
 # last updated: September 22, 2023
-# Tianjia Liu (tianjia.liu@columbia.edu)
+# Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
 library("randomForest"); library("caTools")
 setwd("/Users/TLiu/Google Drive/My Drive/HMS_ISD/HMS/HMS_gapfill/")
