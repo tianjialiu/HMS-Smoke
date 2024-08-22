@@ -58,4 +58,3 @@ for (var inYear = 2005; inYear <= 2024; inYear++) {
     maxPixels: 1e12
   });
 }
-  

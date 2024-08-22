@@ -20,8 +20,8 @@ var maiac = ee.ImageCollection("MODIS/006/MCD19A2_GRANULES"),
 // ================
 // Load Packages
 // ================
-var baseMap = require('users/tl2581/packages:baseMap.js');
-var colPal = require('users/tl2581/packages:colorPalette.js');
+var baseMap = require('users/embrslab/packages:baseMap.js');
+var colPal = require('users/embrslab/packages:colorPalette.js');
 
 var projFolder = 'projects/GlobalFires/';
 
