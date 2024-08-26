@@ -3,29 +3,27 @@
 # ----------------------------------------------------
 # download HMS fire product zip files
 # ====================================================
-# last updated: August 7, 2024
+# last updated: August 13, 2024
 # Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
-source('/Users/TLiu/Google Drive/My Drive/scripts/R/blankDates.R')
+source("~/Projects/HMS_ISD/HMS/scripts/globalParams.R")
+homeDir <- file.path(projDir,"Fire_Points/")
 
-inDatesYMDseq <- seq(as.Date("2009-01-30"),as.Date("2024-08-05"),"day")
+inDatesYMDseq <- seq(as.Date("2024-08-06"),as.Date("2024-08-25"),"day")
 
 inDates <- blankDates(1,12,unique(as.numeric(format(inDatesYMDseq,"%Y"))))
 inDatesYMD <- as.Date(paste0(inDates$Year,"-",sprintf("%02d",inDates$Month),"-",sprintf("%02d",inDates$Day)))
 inDates <- inDates[which(inDatesYMD %in% inDatesYMDseq),]
 
-homeFolder <- "/Users/TLiu/Google Drive/My Drive/HMS_ISD/HMS/Fire_Points/"
-setwd(homeFolder)
-
 for (iDate in 1:dim(inDates)[1]) {
   inFolder <- paste0(inDates$Year[iDate],"/",sprintf("%02d",inDates$Month[iDate]))
-  ifelse(dir.exists(paste0(homeFolder,inFolder)),NA,dir.create(paste0(homeFolder,inFolder),recursive=T))
+  ifelse(dir.exists(paste0(homeDir,inFolder)),NA,dir.create(paste0(homeDir,inFolder),recursive=T))
   
   inFile <- paste0(inFolder,"/hms_fire",inDates$Year[iDate]*1e4+
                      inDates$Month[iDate]*1e2+inDates$Day[iDate],".zip")
   
   try(download.file(paste0("https://satepsanone.nesdis.noaa.gov/pub/FIRE/web/HMS/Fire_Points/Shapefile/",inFile),
-                paste0(homeFolder,inFile),"wget"))
+                paste0(homeDir,inFile),"wget"))
   
   print(inFile)
 }

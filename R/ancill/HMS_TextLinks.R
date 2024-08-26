@@ -4,12 +4,12 @@
 # combine all links to HMS text descriptions
 # into a single table
 # ====================================================
-# last updated: August 7, 2024
+# last updated: August 13, 2024
 # Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
-library("stringr")
-
-setwd("/Users/TLiu/Google Drive/My Drive/HMS_ISD/HMS/Smoke_Text/")
+source("~/Projects/HMS_ISD/HMS/scripts/globalParams.R")
+homeDir <- file.path(projDir,"Smoke_Text/")
+setwd(homeDir)
 
 xYears <- 2005:2024
 

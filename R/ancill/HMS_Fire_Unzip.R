@@ -6,9 +6,10 @@
 # last updated: August 7, 2024
 # Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
-library(R.utils)
-homeDir <- "/Users/TLiu/Google Drive/My Drive/HMS_ISD/HMS/Fire_Points/"
-xYears <- 2003:2024
+source("~/Projects/HMS_ISD/HMS/scripts/globalParams.R")
+homeDir <- file.path(projDir,"Fire_Points/")
+
+xYears <- 2024
 inMode <- "unzip"
 
 if (inMode == "unzip") {

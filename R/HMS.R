@@ -3,13 +3,14 @@
 # ----------------------------------------------------
 # process daily HMS shapefiles and combine by year
 # ====================================================
-# last updated: August 7, 2024
+# last updated: August 13, 2024
 # Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
-library("raster"); library("sf"); library("stringr")
-setwd("/Users/TLiu/Google Drive/My Drive/HMS_ISD/HMS/Smoke_Polygons/")
+source("~/Projects/HMS_ISD/HMS/scripts/globalParams.R")
+homeDir <- file.path(projDir,"Smoke_Polygons/")
+setwd(homeDir)
 
-xYears <- 2005:2024
+xYears <- 2003:2024
 
 nDaysLeap <- c(31,29,31,30,31,30,31,31,30,31,30,31)
 nDaysNonLeap <- c(31,28,31,30,31,30,31,31,30,31,30,31)

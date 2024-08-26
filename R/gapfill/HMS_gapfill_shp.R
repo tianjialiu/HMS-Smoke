@@ -5,11 +5,10 @@
 # with the gapfilled density and related flags
 # (only relevant for 2005-2010)
 # ====================================================
-# last updated: September 22, 2023
+# last updated: August 26, 2024
 # Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
-setwd("/Users/TLiu/Google Drive/My Drive/HMS_ISD/HMS/")
-library("raster"); library("sf")
+source("~/Projects/HMS_ISD/HMS/scripts/globalParams.R")
 
 xYears <- 2005:2010
 

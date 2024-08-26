@@ -9,6 +9,9 @@
 // ==================================================
 Map.setCenter(-100,45,0);
 
+var sYear = 2005;
+var eYear = 2024;
+
 var projFolder = 'projects/GlobalFires/';
 
 var getDuration = function(hmsYr, density) {
@@ -24,7 +27,7 @@ var getSmokeDays = function(hmsYr, density) {
     .rename('SmokeDays').toInt();
 };
 
-for (var inYear = 2005; inYear <= 2024; inYear++) {
+for (var inYear = sYear; inYear <= eYear; inYear++) {
   var hmsYr = ee.FeatureCollection(projFolder + 'HMS/Smoke_Polygons/HMS_' + inYear);
 
   var hmsLight = getDuration(hmsYr,'Light');

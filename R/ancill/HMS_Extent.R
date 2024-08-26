@@ -4,10 +4,12 @@
 # combine HMS extent statistics downloaded from EE
 # into a single table
 # ====================================================
-# last updated: August 7, 2024
+# last updated: August 13, 2024
 # Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
-setwd("/Users/TLiu/Google Drive/My Drive/HMS_ISD/HMS/HMS_Extent/")
+source("~/Projects/HMS_ISD/HMS/scripts/globalParams.R")
+homeDir <- file.path(projDir,"HMS_Extent")
+setwd(homeDir)
 
 xYears <- 2005:2024
 

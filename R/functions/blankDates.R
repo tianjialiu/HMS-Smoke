@@ -7,11 +7,6 @@
 # Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
 
-# open packages
-library("fields");library("plyr");library("pracma")
-library("leaps");library("usdm");library("RColorBrewer");
-library("rgdal");library("rgeos");library("zoo")
-
 blankDates <- function(sMonth,eMonth,inYears,NAcols=F,cutMonths=F) {
   sYear <- inYears[1]
   eYear <- inYears[length(inYears)]

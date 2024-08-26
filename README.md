@@ -3,7 +3,7 @@ NOAA's Hazard Mapping System ([HMS](https://www.ospo.noaa.gov/Products/land/hms.
 
 The [HMS Smoke Explorer](https://globalfires.earthengine.app/view/hms-smoke) allows end-users to visualize NOAA's Hazard Mapping System (HMS) smoke product, MODIS active fires and aerosol optical depth, and GOES-East/West RGB imagery. Since 2005, NOAA analysts manually inspect visible imagery (e.g. GOES, MODIS, VIIRS) and outline the extent of smoke across North America, classified into three density categories: light, medium, and heavy, to produce the HMS smoke product. A corresponding HMS fire product includes active fire detections from multiple satellites/sensors (e.g., MODIS, VIIRS, GOES, AVHRR) with quality control by the analyst.
 
-The latest date available in the HMS Smoke Explorer is August 5, 2024.
+The latest date available in the HMS Smoke Explorer is August 25, 2024.
 
 ![banner image](https://github.com/tianjialiu/HMS-Smoke/blob/main/docs/imgs/HMSSmokeExplorer.png)
 
@@ -21,7 +21,7 @@ The HMS Smoke Explorer covers the time range of the HMS Smoke Product (2005/08-p
 | [HMS Smoke](https://www.ospo.noaa.gov/Products/land/hms.html) | 2005/08-present | -- |
 | [HMS Fire](https://www.ospo.noaa.gov/Products/land/hms.html) | 2003/04-present | -- |
 | [HMS Smoke Text](https://www.ospo.noaa.gov/Products/land/hms.html) | 2005/07-present | -- |
-| [MODIS Burned Area](https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD64A1) | 2000/10-present | 500 m |
+| [MODIS Burned Area](https://developers.google.com/earth-engine/datasets/catalog/MODIS_061_MCD64A1) | 2000/10-present | 500 m |
 | [MODIS MAIAC Aerosol Optical Depth (AOD)](https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD19A2_GRANULES) | 2000/02-present | 1 km |
 | [ECMWF/CAMS AOD, PM<sub>2.5</sub>](https://developers.google.com/earth-engine/datasets/catalog/ECMWF_CAMS_NRT) | 2016/06-present | 0.4° |
 | [GOES-16/East](https://developers.google.com/earth-engine/datasets/tags/goes-16) | 2017/07-present | 2 km |
@@ -110,7 +110,7 @@ Number of HMS polygons in each year, and how many are invalid after processing i
 2021 | 27573 | 27572 | 1 | 0 |
 2022 | 21906 | 21904 | 2 | 0 |
 2023 | 20303 | 20302 | 1 | 0 |
-2024 | 8040 | 8038 | 2 | 0 |
+2024 | 8897 | 8895 | 2 | 0 |
 
 ### Caveats
 * The availability of the satellites is not uniform throughout the record. For example, recent years have higher-resolution active fire detections from VIIRS, which is more capable at detecting small fires.
@@ -162,7 +162,7 @@ Number of HMS active fires from various satellites and missing days since April 
 2021 | 365 | 4166429 | 142898 | 2597493 | 1426038 | 0 | 0 | 0 |
 2022 | 365 | 3570747 | 80920 | 1834499 | 1655328 | 0 | 0 | 0 |
 2023 | 365 | 8196303 | 0 | 5036609 | 3159694 | 0 | 0 | 0 |
-2024 | 218 | 5823403 | 0 | 2773516 | 3049887 | 0 | 0 | 0 |
+2024 | 238 | 7183067 | 0 | 3985268 | 3197799 | 0 | 0 | 0 |
 
 ### Basic Code for Processing HMS Products
 <b>Folder Structure</b>:
@@ -190,7 +190,7 @@ HMS/
 We used random forest classification to assign densities (light, medium, or heavy) to polygons with unspecified densities from 2005-2010. This procedure is described in [Liu et al. (in press, IJWF)](https://doi.org/10.31223/X51963). Note that the code has recently been updated to use `sf` instead of `rgdal`, and additional processing has been done to fix more bad geometries. The code workflow uses EE to generate some input data for the random forest model (`HMS_Stack.js`,`HMS_AOD.js`). The rest of the workflow is in R with `RFmodel_prepare.R` to output a CSV table of data for all HMS polygons from 2005-2022, `RFmodel_withAOD.R` and `RFmodel_withoutAOD.R` to run the random forest classification models, `RFmodel_export.R` to output another CSV table now with the gap-filled densities, and finally `HMS_gapfill_shp.R` to rewrite HMS files from 2005-2010 with the gap-filled densities and associated flags.
 
 ### Updates
-* August 2024: replaced FIRMS with the HMS fire product for the active fires layer on the app
+* August 2024: replaced FIRMS with the HMS fire product for the active fires layer on the app, update MODIS burned area layer from Collection 6 to 6.1
 * July 2024: added VIIRS active fires to app; there seems to be some issues with recent active fire images in the Earth Engine / FIRMS dataset
 * September 2023: uploaded gap-filled HMS polygons from 2005-2010 and added related code; added ancillary code for preprocessing; added note about evaluation of the HMS smoke product on the app
 * July 2023: updated R code to process HMS from rgdal to sf, code is now more inclusive of out-of-bounds polygons and attempts to fix some bad geometries (unclosed rings and out-of-bounds coordinates) but excludes polygons with crossed edges as sf cannot fix them; added QA flags; added jump to latest button

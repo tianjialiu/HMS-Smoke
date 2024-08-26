@@ -5,11 +5,13 @@
 # gapfill unspecified densities, using AOD as a
 # predictor
 # ====================================================
-# last updated: September 22, 2023
+# last updated: August 26, 2024
 # Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
 library("randomForest"); library("caTools")
-setwd("/Users/TLiu/Google Drive/My Drive/HMS_ISD/HMS/HMS_gapfill/")
+source("~/Projects/HMS_ISD/HMS/scripts/globalParams.R")
+homeDir <- file.path(projDir,"HMS_gapfill")
+setwd(homeDir)
 
 hmsAODall <- read.csv("HMS_gapfill.csv")
 var_names <- c("Density","Area","Month","Start","End","Duration","AOD","Overlap")

@@ -3,11 +3,12 @@
 # -------------------------------------------------------
 # process daily HMS fire shapefiles and combine by year
 # =======================================================
-# last updated: August 7, 2024
+# last updated: August 13, 2024
 # Tianjia Liu (embrslab@gmail.com)
 # -------------------------------------------------------
-library("raster"); library("sf"); library("stringr")
-setwd("/Users/TLiu/Google Drive/My Drive/HMS_ISD/HMS/Fire_Points/")
+source("~/Projects/HMS_ISD/HMS/scripts/globalParams.R")
+homeDir <- file.path(projDir,"Fire_Points/")
+setwd(homeDir)
 
 xYears <- 2003:2024
 

@@ -3,12 +3,13 @@
 # ----------------------------------------------------
 # unzip HMS smoke product zip files
 # ====================================================
-# last updated: August 7, 2024
+# last updated: August 13, 2024
 # Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
-library(R.utils)
-homeDir <- "/Users/TLiu/Google Drive/My Drive/HMS_ISD/HMS/Smoke_Polygons/"
-xYears <- 2005:2024
+source("~/Projects/HMS_ISD/HMS/scripts/globalParams.R")
+homeDir <- file.path(projDir,"Smoke_Polygons/")
+
+xYears <- 2024
 inMode <- "unzip"
 
 if (inMode == "unzip") {

@@ -4,11 +4,11 @@
 # export a table of all HMS data as a CSV file
 # for the gap-filling random forest model
 # ====================================================
-# last updated: September 22, 2023
+# last updated: August 26, 2024
 # Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
-setwd("/Users/TLiu/Google Drive/My Drive/HMS_ISD/HMS/")
-library("randomForest"); library("raster"); library("caTools"); library("sf")
+library("randomForest"); library("caTools")
+source("~/Projects/HMS_ISD/HMS/scripts/globalParams.R")
 
 xYears <- 2005:2022
 

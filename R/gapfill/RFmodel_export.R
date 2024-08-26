@@ -4,10 +4,10 @@
 # export a table of all HMS data with the gap-filled
 # densities as another CSV file
 # ====================================================
-# last updated: September 22, 2023
+# last updated: August 26, 2024
 # Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
-setwd("/Users/TLiu/Google Drive/My Drive/HMS_ISD/HMS/")
+source("~/Projects/HMS_ISD/HMS/scripts/globalParams.R")
 
 gapfill <- read.csv("HMS_gapfill/HMS_gapfill_pre.csv")
 
