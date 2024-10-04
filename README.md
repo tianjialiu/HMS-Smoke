@@ -3,7 +3,7 @@ NOAA's Hazard Mapping System ([HMS](https://www.ospo.noaa.gov/Products/land/hms.
 
 The [HMS Smoke Explorer](https://globalfires.earthengine.app/view/hms-smoke) allows end-users to visualize NOAA's Hazard Mapping System (HMS) smoke product, MODIS active fires and aerosol optical depth, and GOES-East/West RGB imagery. Since 2005, NOAA analysts manually inspect visible imagery (e.g. GOES, MODIS, VIIRS) and outline the extent of smoke across North America, classified into three density categories: light, medium, and heavy, to produce the HMS smoke product. A corresponding HMS fire product includes active fire detections from multiple satellites/sensors (e.g., MODIS, VIIRS, GOES, AVHRR) with quality control by the analyst.
 
-The latest date available in the HMS Smoke Explorer is August 25, 2024.
+The latest date available in the HMS Smoke Explorer is October 3, 2024.
 
 ![banner image](https://github.com/tianjialiu/HMS-Smoke/blob/main/docs/imgs/HMSSmokeExplorer.png)
 
@@ -110,7 +110,12 @@ Number of HMS polygons in each year, and how many are invalid after processing i
 2021 | 27573 | 27572 | 1 | 0 |
 2022 | 21906 | 21904 | 2 | 0 |
 2023 | 20303 | 20302 | 1 | 0 |
-2024 | 8897 | 8895 | 2 | 0 |
+2024 | 9950 | 9947 | 3 | 0 |
+
+Missing Dates
+```
+20050809,20050810,20060327,20060401,20060714,20060715,20061104,20070331,20070821,20080123,20080124,20080305,20081005,20090130,20090408,20121007,20150602,20150820,20160306,20161112,20170427,20170531,20170601,20170622,20170718,20190710,20190810
+```
 
 ### Caveats
 * The availability of the satellites is not uniform throughout the record. For example, recent years have higher-resolution active fire detections from VIIRS, which is more capable at detecting small fires.
@@ -145,7 +150,7 @@ Number of HMS active fires from various satellites and missing days since April 
 2004 | 362 | 531036 | 175776 | 0 | 134872 | 220388 | 0 | 0 |
 2005 | 360 | 651044 | 228018 | 0 | 192847 | 230179 | 0 | 0 |
 2006 | 360 | 285921 | 106080 | 0 | 72423 | 107418 | 0 | 0 |
-2007 | 242 | 211687 | 60655 | 0 | 37482 | 113550 | 0 | 0 |
+2007 | 363 | 313656 | 106602 | 0 | 55716 | 151338 | 0 | 0 |
 2008 | 366 | 481666 | 173927 | 0 | 86507 | 221232 | 0 | 0 |
 2009 | 363 | 270833 | 93843 | 0 | 44733 | 132257 | 0 | 0 |
 2010 | 365 | 330678 | 120127 | 0 | 63237 | 147314 | 0 | 0.02 |
@@ -162,7 +167,12 @@ Number of HMS active fires from various satellites and missing days since April 
 2021 | 365 | 4166429 | 142898 | 2597493 | 1426038 | 0 | 0 | 0 |
 2022 | 365 | 3570747 | 80920 | 1834499 | 1655328 | 0 | 0 | 0 |
 2023 | 365 | 8196303 | 0 | 5036609 | 3159694 | 0 | 0 | 0 |
-2024 | 238 | 7183067 | 0 | 3985268 | 3197799 | 0 | 0 | 0 |
+2024 | 277 | 7821045 | 0 | 4424749 | 3396296 | 0 | 0 | 0 |
+
+Missing Dates
+```
+20030501,20030502,20030503,20030504,20030505,20030506,20030507,20030508,20030509,20030510,20030511,20030512,20030513,20030514,20030515,20030516,20030517,20030518,20030519,20030520,20030521,20030522,20030523,20030524,20030525,20030526,20030527,20030528,20030529,20030530,20030531,20030601,20030602,20030603,20030604,20030605,20030606,20030607,20030608,20030609,20030610,20030611,20030612,20030613,20030614,20030615,20030711,20030731,20030830,20030831,20030905,20030907,20030914,20031102,20031210,20031215,20040225,20040402,20040624,20041209,20050511,20050624,20050626,20050703,20050706,20060327,20060401,20060714,20060715,20061104,20070331,20070821,20090130,20090408,20140705,20150602,20150820,20160306,20161108,20161112,20161209,20170427,20170531,20170601,20170622,20170718,20180501,20181220,20181230,20190225,20190709,20190710
+```
 
 ### Basic Code for Processing HMS Products
 <b>Folder Structure</b>:
@@ -190,6 +200,7 @@ HMS/
 We used random forest classification to assign densities (light, medium, or heavy) to polygons with unspecified densities from 2005-2010. This procedure is described in [Liu et al. (in press, IJWF)](https://doi.org/10.31223/X51963). Note that the code has recently been updated to use `sf` instead of `rgdal`, and additional processing has been done to fix more bad geometries. The code workflow uses EE to generate some input data for the random forest model (`HMS_Stack.js`,`HMS_AOD.js`). The rest of the workflow is in R with `RFmodel_prepare.R` to output a CSV table of data for all HMS polygons from 2005-2022, `RFmodel_withAOD.R` and `RFmodel_withoutAOD.R` to run the random forest classification models, `RFmodel_export.R` to output another CSV table now with the gap-filled densities, and finally `HMS_gapfill_shp.R` to rewrite HMS files from 2005-2010 with the gap-filled densities and associated flags.
 
 ### Updates
+* October 2024: fixed missing HMS fire points in 2007
 * August 2024: replaced FIRMS with the HMS fire product for the active fires layer on the app, update MODIS burned area layer from Collection 6 to 6.1
 * July 2024: added VIIRS active fires to app; there seems to be some issues with recent active fire images in the Earth Engine / FIRMS dataset
 * September 2023: uploaded gap-filled HMS polygons from 2005-2010 and added related code; added ancillary code for preprocessing; added note about evaluation of the HMS smoke product on the app
@@ -198,4 +209,4 @@ We used random forest classification to assign densities (light, medium, or heav
 * August 2020: added visualization of GOES RGB imagery, HMS smoke days and 'duration'
 
 ### Publications
-Liu, T., F.M. Panday, M.C. Caine, M. Kelp, D.C. Pendergrass, L.J. Mickley, E.A. Ellicott, M.E. Marlier, R. Ahmadov, and E.P. James. Is the smoke aloft? Caveats regarding the use of the Hazard Mapping System (HMS) smoke product as a proxy for surface smoke presence across the United States. (in press at Int. J. Wildland Fire, preprint: https://doi.org/10.31223/X51963)
+Liu, T., F.M. Panday, M.C. Caine, M. Kelp, D.C. Pendergrass, L.J. Mickley, E.A. Ellicott, M.E. Marlier, R. Ahmadov, and E.P. James (2024). Is the smoke aloft? Caveats regarding the use of the Hazard Mapping System (HMS) smoke product as a proxy for surface smoke presence across the United States. Int. J. Wildland Fire, 33, WF23148. https://doi.org/10.1071/WF23148

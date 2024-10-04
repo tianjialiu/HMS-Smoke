@@ -9,7 +9,7 @@ var maiac = ee.ImageCollection("MODIS/006/MCD19A2_GRANULES"),
 // *****************************************************************
 /*
 // @author Tianjia Liu (embrslab@gmail.com)
-// Last updated: August 26, 2024
+// Last updated: October 4, 2024
 
 // Purpose: visualize HMS smoke with MODIS active fires
 // and aerosol optical depth
@@ -28,7 +28,7 @@ var projFolder = 'projects/GlobalFires/';
 var sYear = 2005;
 var eYear = 2023;
 var nrtYear = eYear + 1;
-var nrtEnd = '2024-08-25';
+var nrtEnd = '2024-10-03';
 
 var region = ee.Geometry.Rectangle([-180,0,0,90],null,false);
 maiac = maiac.filterBounds(region);
@@ -453,8 +453,8 @@ var infoPanel = function() {
   var introDetails = ui.Label('',{margin: '5px 20px 0px 8px',fontSize: '12px', color: '#999'});
   var introDetailsText = 'The HMS smoke product should be used with caution as an indicator of surface smoke presence. We find that inclusion of HMS light plumes leads to inflation of the number and trend in smoke days. Outside the western U.S. and Alaska, we find no to low agreement with ground observations and model estimates and often low separation of PM2.5 levels on smoke and non-smoke days. We recommend careful evaluation of biases in HMS for air quality and public health studies. Here we also gap-fill polygons with unspecified smoke density from 2005-2010 using random forest classification. Details on our evaluation of HMS with other datasets and on methods for gap-filling smoke polygons with unspecified density can be found in our paper.';
   
-  var introDetailsLink = ui.Label('', {margin: '22px 5px 3px 10px', fontSize: '12.5px', color: '#5886E8'}, 'https://doi.org/10.31223/X51963');
-  var introDetailsLinkText = '[Paper: Liu et al. (in press, IJWF)]';
+  var introDetailsLink = ui.Label('', {margin: '22px 5px 3px 10px', fontSize: '12.5px', color: '#5886E8'}, 'https://doi.org/10.1071/WF23148');
+  var introDetailsLinkText = '[Paper: Liu et al. (2024, IJWF)]';
   
   var hideIntroMode = true;
   var hideShowIntroButton = ui.Button({
