@@ -1,9 +1,9 @@
 # HMS-Smoke
-NOAA's Hazard Mapping System ([HMS](https://www.ospo.noaa.gov/Products/land/hms.html)) Smoke Product
+NOAA's Hazard Mapping System ([HMS](https://www.ospo.noaa.gov/Products/land/hms.html))
 
-The [HMS Smoke Explorer](https://globalfires.earthengine.app/view/hms-smoke) allows end-users to visualize NOAA's Hazard Mapping System (HMS) smoke product, MODIS active fires and aerosol optical depth, and GOES-East/West RGB imagery. Since 2005, NOAA analysts manually inspect visible imagery (e.g. GOES, MODIS, VIIRS) and outline the extent of smoke across North America, classified into three density categories: light, medium, and heavy, to produce the HMS smoke product. A corresponding HMS fire product includes active fire detections from multiple satellites/sensors (e.g., MODIS, VIIRS, GOES, AVHRR) with quality control by the analyst.
+The [HMS Smoke Explorer](https://globalfires.earthengine.app/view/hms-smoke) allows end-users to visualize NOAA's Hazard Mapping System (HMS) smoke and fire products, MODIS aerosol optical depth, and GOES-East/West RGB imagery. Since 2005, NOAA analysts have been inspecting satellite imagery (e.g. GOES, MODIS, VIIRS) and manually outlining the extent of smoke across North America, classified into three density categories: light, medium, and heavy, to produce the HMS smoke product. A corresponding HMS fire product includes active fire detections from multiple satellites/sensors (e.g., MODIS, VIIRS, GOES, AVHRR) with quality control by the analysts.
 
-The latest date available in the HMS Smoke Explorer is October 3, 2024.
+The latest date available in the HMS Smoke Explorer is December 13, 2024.
 
 ![banner image](https://github.com/tianjialiu/HMS-Smoke/blob/main/docs/imgs/HMSSmokeExplorer.png)
 
@@ -110,7 +110,7 @@ Number of HMS polygons in each year, and how many are invalid after processing i
 2021 | 27573 | 27572 | 1 | 0 |
 2022 | 21906 | 21904 | 2 | 0 |
 2023 | 20303 | 20302 | 1 | 0 |
-2024 | 9950 | 9947 | 3 | 0 |
+2024 | 12220 | 12217 | 3 | 0 |
 
 Missing Dates
 ```
@@ -139,7 +139,7 @@ JDaySat | Julian day or DOY (satellite) | 1-365
 HHMMSat | Hour/minute of active fire detection, UTC | HHMM
 Satellite | Satellite origin of active fire detection | e.g., 'GOES-EAST', 'GOES-WEST'
 Method | Method of active fire detection | ANALYSIS = manual input, other labels = automated
-Ecosystem | Ecosystem category derived from the [Global Land Cover Characterization databse](https://www.usgs.gov/centers/eros/science/usgs-eros-archive-land-cover-products-global-land-cover-characterization-glcc?qt-science_center_objects=0#qt-science_center_objects) | integer
+Ecosystem | Ecosystem category derived from the [Global Land Cover Characterization database](https://www.usgs.gov/centers/eros/science/usgs-eros-archive-land-cover-products-global-land-cover-characterization-glcc?qt-science_center_objects=0#qt-science_center_objects) | integer
 QAFlag | QA flag for satellite detection date/time | 0, 1 (valid: 0 = good, 1 = date/time invalid and filled with HMS filename)
 
 ### Summary Stats and Quality Control
@@ -167,7 +167,7 @@ Number of HMS active fires from various satellites and missing days since April 
 2021 | 365 | 4166429 | 142898 | 2597493 | 1426038 | 0 | 0 | 0 |
 2022 | 365 | 3570747 | 80920 | 1834499 | 1655328 | 0 | 0 | 0 |
 2023 | 365 | 8196303 | 0 | 5036609 | 3159694 | 0 | 0 | 0 |
-2024 | 277 | 7821045 | 0 | 4424749 | 3396296 | 0 | 0 | 0 |
+2024 | 348 | 8374879 | 0 | 4736926 | 3637953 | 0 | 0 | 0 |
 
 Missing Dates
 ```
@@ -197,7 +197,7 @@ HMS/
 3. Retrieve HMS smoke text description links as .txt and output as yearly .csv tables in `HMS/Smoke_Text/` using `ancill/HMS_TextLinksYr.R`; combine the .csv files into a single file, `HMS/Smoke_Text/HMS_SmokeText.csv`, using `ancill/HMS_TextLinks.R`
 
 ### Gap-filling Unspecified Densities
-We used random forest classification to assign densities (light, medium, or heavy) to polygons with unspecified densities from 2005-2010. This procedure is described in [Liu et al. (in press, IJWF)](https://doi.org/10.31223/X51963). Note that the code has recently been updated to use `sf` instead of `rgdal`, and additional processing has been done to fix more bad geometries. The code workflow uses EE to generate some input data for the random forest model (`HMS_Stack.js`,`HMS_AOD.js`). The rest of the workflow is in R with `RFmodel_prepare.R` to output a CSV table of data for all HMS polygons from 2005-2022, `RFmodel_withAOD.R` and `RFmodel_withoutAOD.R` to run the random forest classification models, `RFmodel_export.R` to output another CSV table now with the gap-filled densities, and finally `HMS_gapfill_shp.R` to rewrite HMS files from 2005-2010 with the gap-filled densities and associated flags.
+We used random forest classification to assign densities (light, medium, or heavy) to polygons with unspecified densities from 2005-2010. This procedure is described in [Liu et al. (2024, IJWF)](https://doi.org/10.31223/X51963). Note that the code has recently been updated to use `sf` instead of `rgdal`, and additional processing has been done to fix more bad geometries. The code workflow uses EE to generate some input data for the random forest model (`HMS_Stack.js`,`HMS_AOD.js`). The rest of the workflow is in R with `RFmodel_prepare.R` to output a CSV table of data for all HMS polygons from 2005-2022, `RFmodel_withAOD.R` and `RFmodel_withoutAOD.R` to run the random forest classification models, `RFmodel_export.R` to output another CSV table now with the gap-filled densities, and finally `HMS_gapfill_shp.R` to rewrite HMS files from 2005-2010 with the gap-filled densities and associated flags.
 
 ### Updates
 * October 2024: fixed missing HMS fire points in 2007

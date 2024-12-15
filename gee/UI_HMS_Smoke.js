@@ -9,7 +9,7 @@ var maiac = ee.ImageCollection("MODIS/006/MCD19A2_GRANULES"),
 // *****************************************************************
 /*
 // @author Tianjia Liu (embrslab@gmail.com)
-// Last updated: October 4, 2024
+// Last updated: December 15, 2024
 
 // Purpose: visualize HMS smoke with MODIS active fires
 // and aerosol optical depth
@@ -28,7 +28,7 @@ var projFolder = 'projects/GlobalFires/';
 var sYear = 2005;
 var eYear = 2023;
 var nrtYear = eYear + 1;
-var nrtEnd = '2024-10-03';
+var nrtEnd = '2024-12-13';
 
 var region = ee.Geometry.Rectangle([-180,0,0,90],null,false);
 maiac = maiac.filterBounds(region);
@@ -221,12 +221,12 @@ var getGOESrgb = function(dateTime,goesRGB_col,goesFire_col) {
   
   var goesRGB = red.addBands(green).addBands(blue);
   
-  var goesFireCol = ee.ImageCollection(goesFire_col)
-    .filterDate(dateTime,dateTime.advance(1,'hour')).select('Power');
+  var goesFireCol = goesFire_col
+    .filterDate(dateTime,dateTime.advance(1,'hour')).select('DQF');
     
   var goesFire = ee.Algorithms.If(goesFireCol.size().gt(0),
-    ee.Image(goesFireCol.max().gt(0).selfMask()),ee.Image(0).selfMask());
-  
+    ee.Image(goesFireCol.min().eq(0).selfMask()),ee.Image(0).selfMask());
+   
   return goesRGB.visualize({min:0, max:maxVis, gamma: 1.5})
     .blend(ee.Image(goesFire).visualize({palette: 'red', opacity: 0.4}));
 };
@@ -251,11 +251,10 @@ var getGOESrgb_mask = function(dateTime,goesRGB_col,goesFire_col) {
   var green3 = blue.multiply(0.45);
   var green = green1.add(green2).add(green3).rename('GREEN');
   
-  var goesMask = red.updateMask(green).updateMask(blue)
-    .gt(0).selfMask().unmask(0);
+  var goesMask = red.gt(0).multiply(green.gt(0)).multiply(blue.gt(0));
   
   var goesRGB = red.addBands(green).addBands(blue)
-    .multiply(goesMask).unmask(0);
+    .updateMask(goesMask);
   
   var goesFireCol = goesFire_col
     .filterDate(dateTime,dateTime.advance(1,'hour')).select('DQF');
