@@ -9,7 +9,7 @@ var maiac = ee.ImageCollection("MODIS/006/MCD19A2_GRANULES"),
 // *****************************************************************
 /*
 // @author Tianjia Liu (embrslab@gmail.com)
-// Last updated: December 15, 2024
+// Last updated: January 10, 2024
 
 // Purpose: visualize HMS smoke with MODIS active fires
 // and aerosol optical depth
@@ -26,9 +26,9 @@ var colPal = require('users/embrslab/packages:colorPalette.js');
 var projFolder = 'projects/GlobalFires/';
 
 var sYear = 2005;
-var eYear = 2023;
+var eYear = 2024;
 var nrtYear = eYear + 1;
-var nrtEnd = '2024-12-13';
+var nrtEnd = '2025-01-09';
 
 var region = ee.Geometry.Rectangle([-180,0,0,90],null,false);
 maiac = maiac.filterBounds(region);
@@ -511,7 +511,7 @@ var viewPanel = function() {
       if (selected == 'By Day') {setTimePanel('By Day')}
       if (selected == 'By Year') {setTimePanel('By Year')}
       if (selected == 'Summary') {
-        timeModePanel.add(ui.Label('Note that 2005 & 2024 are not included in the summary due to partial data availability.',
+        timeModePanel.add(ui.Label('Note that 2005 & 2025 are not included in the summary due to partial data availability.',
           {fontSize: '13px', margin: '5px 8px 8px 8px', color: '#777'}));
       }
     });

@@ -2,7 +2,7 @@
 // HMS_Stats.js
 // --------------------------------------------------
 // @author Tianjia Liu (embrslab@gmail.com)
-// Last updated: January 19, 2024
+// Last updated: January 10, 2025
 // --------------------------------------------------
 // Output smoke days and "duration" as annual images
 // in EE Assets
@@ -10,7 +10,7 @@
 Map.setCenter(-100,45,0);
 
 var sYear = 2005;
-var eYear = 2024;
+var eYear = 2025;
 
 var projFolder = 'projects/GlobalFires/';
 
