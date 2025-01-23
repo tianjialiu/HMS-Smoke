@@ -3,7 +3,7 @@ NOAA's Hazard Mapping System ([HMS](https://www.ospo.noaa.gov/Products/land/hms.
 
 The [HMS Smoke Explorer](https://globalfires.earthengine.app/view/hms-smoke) allows end-users to visualize NOAA's Hazard Mapping System (HMS) smoke and fire products, MODIS aerosol optical depth, and GOES-East/West RGB imagery. Since 2005, NOAA analysts have been inspecting satellite imagery (e.g. GOES, MODIS, VIIRS) and manually outlining the extent of smoke across North America, classified into three density categories: light, medium, and heavy, to produce the HMS smoke product. A corresponding HMS fire product includes active fire detections from multiple satellites/sensors (e.g., MODIS, VIIRS, GOES, AVHRR) with quality control by the analysts.
 
-The latest date available in the HMS Smoke Explorer is January 9, 2025.
+The latest date available in the HMS Smoke Explorer is January 21, 2025.
 
 ![banner image](https://github.com/tianjialiu/HMS-Smoke/blob/main/docs/imgs/HMSSmokeExplorer.png)
 
@@ -111,7 +111,7 @@ Number of HMS polygons in each year, and how many are invalid after processing i
 2022 | 21906 | 21904 | 2 | 0 |
 2023 | 20303 | 20302 | 1 | 0 |
 2024 | 12544 | 12541 | 3 | 0 |
-2025 | 370 | 370 | 0 | 0 |
+2025 | 610 | 610 | 0 | 0 |
 
 Missing Dates
 ```
@@ -169,7 +169,7 @@ Number of HMS active fires from various satellites and missing days since April 
 2022 | 365 | 3570747 | 80920 | 1834499 | 1655328 | 0 | 0 | 0 |
 2023 | 365 | 8196303 | 0 | 5036609 | 3159694 | 0 | 0 | 0 |
 2024 | 366 | 8434632 | 0 | 4773062 | 3661570 | 0 | 0 | 0 |
-2025 | 9 | 61218 | 0 | 32854 | 28364 | 0 | 0 | 0 |
+2025 | 21 | 127491 | 0 | 66486 | 61005 | 0 | 0 | 0 |
 
 Missing Dates
 ```
