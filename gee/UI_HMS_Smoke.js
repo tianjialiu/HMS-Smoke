@@ -9,7 +9,7 @@ var maiac = ee.ImageCollection("MODIS/006/MCD19A2_GRANULES"),
 // *****************************************************************
 /*
 // @author Tianjia Liu (embrslab@gmail.com)
-// Last updated: January 22, 2025
+// Last updated: February 22, 2025
 
 // Purpose: visualize HMS smoke with MODIS active fires
 // and aerosol optical depth
@@ -28,7 +28,7 @@ var projFolder = 'projects/GlobalFires/';
 var sYear = 2005;
 var eYear = 2024;
 var nrtYear = eYear + 1;
-var nrtEnd = '2025-01-21';
+var nrtEnd = '2025-02-21';
 
 var region = ee.Geometry.Rectangle([-180,0,0,90],null,false);
 maiac = maiac.filterBounds(region);
