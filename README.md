@@ -3,7 +3,7 @@ NOAA's Hazard Mapping System ([HMS](https://www.ospo.noaa.gov/Products/land/hms.
 
 The [HMS Smoke Explorer](https://globalfires.earthengine.app/view/hms-smoke) allows end-users to visualize NOAA's Hazard Mapping System (HMS) smoke and fire products, MODIS aerosol optical depth, and GOES-East/West RGB imagery. Since 2005, NOAA analysts have been inspecting satellite imagery (e.g. GOES, MODIS, VIIRS) and manually outlining the extent of smoke across North America, classified into three density categories: light, medium, and heavy, to produce the HMS smoke product. A corresponding HMS fire product includes active fire detections from multiple satellites/sensors (e.g., MODIS, VIIRS, GOES, AVHRR) with quality control by the analysts.
 
-The latest date available in the HMS Smoke Explorer is April 6, 2025.
+The latest date available in the HMS Smoke Explorer is May 29, 2025.
 
 ![banner image](https://github.com/tianjialiu/HMS-Smoke/blob/main/docs/imgs/HMSSmokeExplorer.png)
 
@@ -27,6 +27,7 @@ The HMS Smoke Explorer covers the time range of the HMS Smoke Product (2005/08-p
 | [GOES-16/East](https://developers.google.com/earth-engine/datasets/tags/goes-16) | 2017/07-present | 2 km |
 | [GOES-17/West](https://developers.google.com/earth-engine/datasets/tags/goes-17) | 2018/12-2023/01 | 2 km |
 | [GOES-18/West](https://developers.google.com/earth-engine/datasets/tags/goes-18) | 2022/10-present | 2 km |
+| [GOES-19/East](https://developers.google.com/earth-engine/datasets/tags/goes-19) | 2025/04-present | 2 km |
 
 ### HMS on Google Earth Engine
 The processed HMS smoke product can be used for analysis on Google Earth Engine (EE) and downloaded as yearly files.
@@ -111,7 +112,7 @@ Number of HMS polygons in each year, and how many are invalid after processing i
 2022 | 21906 | 21904 | 2 | 0 |
 2023 | 20303 | 20302 | 1 | 0 |
 2024 | 12544 | 12541 | 3 | 0 |
-2025 | 4597 | 4595 | 2 | 0 |
+2025 | 8275 | 8273 | 2 | 0 |
 
 Missing Dates
 ```
@@ -169,11 +170,11 @@ Number of HMS active fires from various satellites and missing days since April 
 2022 | 365 | 3570747 | 80920 | 1834499 | 1655328 | 0 | 0 | 0 |
 2023 | 365 | 8196303 | 0 | 5036609 | 3159694 | 0 | 0 | 0 |
 2024 | 366 | 8434632 | 0 | 4773062 | 3661570 | 0 | 0 | 0 |
-2025 | 96 | 1392664 | 0 | 567563 | 825101 | 0 | 0 | 0 |
+2025 | 147 | 3381422 | 0 | 1452865 | 1928557 | 0 | 0 | 0 |
 
-Missing Dates
+Missing Dates or Corrupt Files
 ```
-20030501,20030502,20030503,20030504,20030505,20030506,20030507,20030508,20030509,20030510,20030511,20030512,20030513,20030514,20030515,20030516,20030517,20030518,20030519,20030520,20030521,20030522,20030523,20030524,20030525,20030526,20030527,20030528,20030529,20030530,20030531,20030601,20030602,20030603,20030604,20030605,20030606,20030607,20030608,20030609,20030610,20030611,20030612,20030613,20030614,20030615,20030711,20030731,20030830,20030831,20030905,20030907,20030914,20031102,20031210,20031215,20040225,20040402,20040624,20041209,20050511,20050624,20050626,20050703,20050706,20060327,20060401,20060714,20060715,20061104,20070331,20070821,20090130,20090408,20140705,20150602,20150820,20160306,20161108,20161112,20161209,20170427,20170531,20170601,20170622,20170718,20180501,20181220,20181230,20190225,20190709,20190710
+20030501,20030502,20030503,20030504,20030505,20030506,20030507,20030508,20030509,20030510,20030511,20030512,20030513,20030514,20030515,20030516,20030517,20030518,20030519,20030520,20030521,20030522,20030523,20030524,20030525,20030526,20030527,20030528,20030529,20030530,20030531,20030601,20030602,20030603,20030604,20030605,20030606,20030607,20030608,20030609,20030610,20030611,20030612,20030613,20030614,20030615,20030711,20030731,20030830,20030831,20030905,20030907,20030914,20031102,20031210,20031215,20040225,20040402,20040624,20041209,20050511,20050624,20050626,20050703,20050706,20060327,20060401,20060714,20060715,20061104,20070331,20070821,20090130,20090408,20140705,20150602,20150820,20160306,20161108,20161112,20161209,20170427,20170531,20170601,20170622,20170718,20180501,20181220,20181230,20190225,20190709,20190710,20250508,20250511
 ```
 
 ### Basic Code for Processing HMS Products
@@ -202,6 +203,7 @@ HMS/
 We used random forest classification to assign densities (light, medium, or heavy) to polygons with unspecified densities from 2005-2010. This procedure is described in [Liu et al. (2024, IJWF)](https://doi.org/10.31223/X51963). Note that the code has recently been updated to use `sf` instead of `rgdal`, and additional processing has been done to fix more bad geometries. The code workflow uses EE to generate some input data for the random forest model (`HMS_Stack.js`,`HMS_AOD.js`). The rest of the workflow is in R with `RFmodel_prepare.R` to output a CSV table of data for all HMS polygons from 2005-2022, `RFmodel_withAOD.R` and `RFmodel_withoutAOD.R` to run the random forest classification models, `RFmodel_export.R` to output another CSV table now with the gap-filled densities, and finally `HMS_gapfill_shp.R` to rewrite HMS files from 2005-2010 with the gap-filled densities and associated flags.
 
 ### Updates
+* May 2025: update `UI_HMS_Smoke.js` with GOES-19/East imagery and active fires
 * April 2025: update `HMS_TextLinksYr.R` using the [NOAA OSPO archive](https://www.ospo.noaa.gov/products/land/smoke/); the FTP server used previously is no longer available
 * October 2024: fixed missing HMS fire points in 2007
 * August 2024: replaced FIRMS with the HMS fire product for the active fires layer on the app, update MODIS burned area layer from Collection 6 to 6.1

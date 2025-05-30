@@ -9,7 +9,7 @@ var maiac = ee.ImageCollection("MODIS/006/MCD19A2_GRANULES"),
 // *****************************************************************
 /*
 // @author Tianjia Liu (embrslab@gmail.com)
-// Last updated: April 7, 2025
+// Last updated: May 30, 2025
 
 // Purpose: visualize HMS smoke with MODIS active fires
 // and aerosol optical depth
@@ -28,7 +28,7 @@ var projFolder = 'projects/GlobalFires/';
 var sYear = 2005;
 var eYear = 2024;
 var nrtYear = eYear + 1;
-var nrtEnd = '2025-04-06';
+var nrtEnd = '2025-05-29';
 
 var region = ee.Geometry.Rectangle([-180,0,0,90],null,false);
 maiac = maiac.filterBounds(region);
@@ -113,20 +113,23 @@ var getCAMS = function(year,month,day,camsBand) {
 
 // define collections for GOES-East and GOES-West
 var goesRGB_IDs = ee.Dictionary({
-  'GOES-East': ee.List([ee.ImageCollection('NOAA/GOES/16/MCMIPF')]),
+  'GOES-East': ee.List([ee.ImageCollection('NOAA/GOES/16/MCMIPF'),
+    ee.ImageCollection('NOAA/GOES/19/MCMIPF')]),
   'GOES-West': ee.List([ee.ImageCollection('NOAA/GOES/17/MCMIPF'),
     ee.ImageCollection('NOAA/GOES/18/MCMIPF')])
 });
 
 var goesFire_IDs = ee.Dictionary({
-  'GOES-East': ee.List([ee.ImageCollection('NOAA/GOES/16/FDCF')]),
+  'GOES-East': ee.List([ee.ImageCollection('NOAA/GOES/16/FDCF'),
+    ee.ImageCollection('NOAA/GOES/19/FDCF')]),
   'GOES-West': ee.List([ee.ImageCollection('NOAA/GOES/17/FDCF'),
     ee.ImageCollection('NOAA/GOES/18/FDCF')])
 });
 
 var goesBreakPts = ee.Dictionary({
   'GOES-East': ee.FeatureCollection([
-      ee.Feature(null,{idx: 0, breakPt: ee.Date('2017-07-10')})
+      ee.Feature(null,{idx: 0, breakPt: ee.Date('2017-07-10')}),
+      ee.Feature(null,{idx: 1, breakPt: ee.Date('2025-04-07')})
     ]),
   'GOES-West': ee.FeatureCollection([
       ee.Feature(null,{idx: 0, breakPt: ee.Date('2018-08-28')}),
