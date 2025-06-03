@@ -4,16 +4,16 @@
 # retrieve links to HMS text descriptions, 
 # combine into a yearly table
 # ====================================================
-# last updated: April 1, 2025
+# last updated: June 2, 2025
 # Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
 source("~/Projects/HMS_ISD/HMS/R/globalParams.R")
 homeDir <- file.path(projDir,"Smoke_Text/")
 setwd(homeDir)
 
-xYears <- 2005
+xYears <- 2005:2025
 currYear <- 2025
-forceCheckURL <- F
+forceCheckURL <- T
 
 hms_text <- "https://www.ospo.noaa.gov/products/land/smoke/"
 hms_text_loc <- "https://www.ospo.noaa.gov/"
@@ -52,8 +52,7 @@ checkValidURL <- function(link,year) {
 getTime <- function(link) {
   html_date <- html_text(html_nodes(read_html(link),"strong"))[1] %>%
     str_replace_all(.,"\n","") %>% str_replace_all(.,"\n","") %>%
-    str_replace_all(.,"st","") %>% str_replace_all(.,"nd","") %>%
-    str_replace_all(.,"rd","") %>% str_replace_all(.,"th","") %>%
+    str_replace_all(.,"([0-9])(st|nd|rd|th)","\\1") %>%
     str_replace_all(.," , ",", ") %>% str_replace_all(.,",","") %>%
     str_replace_all(.,"  "," ") %>% 
     str_squish()
@@ -83,7 +82,8 @@ for (inYear in xYears) {
   hmsLinks <- as.character(read.table(paste0("HMS",inYear,".txt"))[,1])
   hmsYear <- rep(inYear,length(hmsLinks))
   
-  hmsFileNames <- do.call(rbind,strsplit(do.call(c,lapply(strsplit(hmsLinks,"/"),function(x) x[length(x)])),".html"))[,1]
+  hmsFileNames <- do.call(rbind,strsplit(do.call(c,lapply(strsplit(hmsLinks,"/"),
+                                                          function(x) x[length(x)])),".html"))[,1]
   
   hmsMonthStr <- substr(hmsFileNames,5,5)
   monthLetter <- LETTERS[1:12]

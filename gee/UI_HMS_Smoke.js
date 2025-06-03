@@ -9,7 +9,7 @@ var maiac = ee.ImageCollection("MODIS/006/MCD19A2_GRANULES"),
 // *****************************************************************
 /*
 // @author Tianjia Liu (embrslab@gmail.com)
-// Last updated: May 30, 2025
+// Last updated: June 2, 2025
 
 // Purpose: visualize HMS smoke with MODIS active fires
 // and aerosol optical depth
@@ -28,7 +28,7 @@ var projFolder = 'projects/GlobalFires/';
 var sYear = 2005;
 var eYear = 2024;
 var nrtYear = eYear + 1;
-var nrtEnd = '2025-05-29';
+var nrtEnd = '2025-06-01';
 
 var region = ee.Geometry.Rectangle([-180,0,0,90],null,false);
 maiac = maiac.filterBounds(region);
@@ -282,6 +282,9 @@ var getSmokeStats = function(year,month,day) {
   var smokeExtentTitle = ui.Label('Smoke Extent',
     {fontWeight:'bold', fontSize: '18px', margin: '3px 8px 2px 8px'});
   
+  var smokeExtentSubtitle = ui.Label('Total area covered by smoke, in km² (HMS smoke plumes do not necessarily mean that surface air quality is impacted by smoke, since plumes may be aloft.)',
+    {fontSize: '12px', margin: '0px 8px 2px 8px'});
+  
   hmsDayExtent = ee.List(['Light','Medium','Heavy','Total'])
     .map(function(hmsCat) {return hmsDayExtent.filter(ee.Filter.eq('Density',hmsCat)).first()});
   hmsDayExtent = ee.FeatureCollection(hmsDayExtent);
@@ -291,10 +294,10 @@ var getSmokeStats = function(year,month,day) {
     ).setChartType('Table');
   
   return ui.Panel({
-    widgets: [smokeExtentTitle,smokeExtent],
+    widgets: [smokeExtentTitle,smokeExtentSubtitle,smokeExtent],
     style: {
       width: '250px',
-      height: '180px',
+      height: '238px',
       position: 'bottom-right'
     }
   });
@@ -384,8 +387,11 @@ var hmsSmokeText = ee.FeatureCollection(projFolder + 'HMS/HMS_SmokeText');
 
 var getSmokeText = function(year,month,day) {
   var smokeTxtTitle = ui.Label('Smoke Text Description',
-    {fontWeight:'bold', fontSize: '18px', margin: '3px 8px 6px 8px'});
+    {fontWeight:'bold', fontSize: '18px', margin: '3px 8px 2px 8px'});
   
+  var smokeTxtSubtitle = ui.Label('Links to smoke and dust reports by HMS analysts, similar to weather reports',
+    {fontSize: '12px', margin: '0px 8px 2px 8px'});
+
   // as a table
   var smokeTextDay = hmsSmokeText
     .filter(ee.Filter.eq('Year',year))
@@ -425,7 +431,7 @@ var getSmokeText = function(year,month,day) {
   //   }
   // });
   
-  return ui.Panel({widgets: [smokeTxtTitle,smokeTxtChart],
+  return ui.Panel({widgets: [smokeTxtTitle,smokeTxtSubtitle,smokeTxtChart],
     style: {
       width: '250px',
       position: 'bottom-right',

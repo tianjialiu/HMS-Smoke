@@ -3,13 +3,13 @@
 # ----------------------------------------------------
 # unzip HMS fire product zip files
 # ====================================================
-# last updated: August 7, 2024
+# last updated: June 2, 2025
 # Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
 source("~/Projects/HMS_ISD/HMS/scripts/globalParams.R")
 homeDir <- file.path(projDir,"Fire_Points/")
 
-xYears <- 2024
+xYears <- 2005:2025
 inMode <- "unzip"
 
 if (inMode == "unzip") {

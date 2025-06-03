@@ -3,13 +3,11 @@
 # ----------------------------------------------------
 # download HMS smoke product zip files
 # ====================================================
-# last updated: August 13, 2024
+# last updated: June 2, 2025
 # Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
 source("~/Projects/HMS_ISD/HMS/scripts/globalParams.R")
 homeDir <- file.path(projDir,"Smoke_Polygons/")
-
-inDatesYMDseq <- seq(as.Date("2024-08-06"),as.Date("2024-08-25"),"day")
 
 inDates <- blankDates(1,12,unique(as.numeric(format(inDatesYMDseq,"%Y"))))
 inDatesYMD <- as.Date(paste0(inDates$Year,"-",sprintf("%02d",inDates$Month),"-",sprintf("%02d",inDates$Day)))

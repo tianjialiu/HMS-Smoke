@@ -5,3 +5,6 @@ projDir <- "/Users/TLiu/Projects/HMS_ISD/HMS/"
 setwd(projDir)
 
 source(paste0(projDir,'R/functions/blankDates.R'))
+
+# new HMS dates to process
+inDatesYMDseq <- seq(as.Date("2025-05-08"),as.Date("2025-05-29"),"day")

@@ -3,14 +3,14 @@
 # -------------------------------------------------------
 # process daily HMS fire shapefiles and combine by year
 # =======================================================
-# last updated: August 13, 2024
+# last updated: June 2, 2025
 # Tianjia Liu (embrslab@gmail.com)
 # -------------------------------------------------------
 source("~/Projects/HMS_ISD/HMS/scripts/globalParams.R")
 homeDir <- file.path(projDir,"Fire_Points/")
 setwd(homeDir)
 
-xYears <- 2003:2024
+xYears <- 2003:2025
 
 nDaysLeap <- c(31,29,31,30,31,30,31,31,30,31,30,31)
 nDaysNonLeap <- c(31,28,31,30,31,30,31,31,30,31,30,31)

@@ -4,14 +4,14 @@
 # combine HMS extent statistics downloaded from EE
 # into a single table
 # ====================================================
-# last updated: August 13, 2024
+# last updated: June 2, 2025
 # Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
 source("~/Projects/HMS_ISD/HMS/scripts/globalParams.R")
 homeDir <- file.path(projDir,"HMS_Extent")
 setwd(homeDir)
 
-xYears <- 2005:2024
+xYears <- 2005:2025
 
 hmsExtAll <- list()
 for (iYear in seq_along(xYears)) {

@@ -3,7 +3,7 @@
 # ----------------------------------------------------
 # download HMS fire product zip files
 # ====================================================
-# last updated: August 13, 2024
+# last updated: June 2, 2025
 # Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
 source("~/Projects/HMS_ISD/HMS/scripts/globalParams.R")
