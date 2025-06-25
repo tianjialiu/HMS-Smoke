@@ -9,7 +9,7 @@ var maiac = ee.ImageCollection("MODIS/006/MCD19A2_GRANULES"),
 // *****************************************************************
 /*
 // @author Tianjia Liu (embrslab@gmail.com)
-// Last updated: June 2, 2025
+// Last updated: June 25, 2025
 
 // Purpose: visualize HMS smoke with MODIS active fires
 // and aerosol optical depth
@@ -28,7 +28,7 @@ var projFolder = 'projects/GlobalFires/';
 var sYear = 2005;
 var eYear = 2024;
 var nrtYear = eYear + 1;
-var nrtEnd = '2025-06-01';
+var nrtEnd = '2025-06-24';
 
 var region = ee.Geometry.Rectangle([-180,0,0,90],null,false);
 maiac = maiac.filterBounds(region);
@@ -217,7 +217,7 @@ var getGOESrgb = function(dateTime,goesRGB_col,goesFire_col) {
   // Bah, Gunshor, Schmit, Generation of GOES-16 True Color Imagery without a
   // Green Band, 2018. https://doi.org/10.1029/2018EA000379
   // Green = 0.45 * Red + 0.10 * NIR + 0.45 * Blue
-  var green1 = red.multiply(0.4);
+  var green1 = red.multiply(0.45);
   var green2 = veggie.multiply(0.1);
   var green3 = blue.multiply(0.45);
   var green = green1.add(green2).add(green3).rename('GREEN');
@@ -310,7 +310,8 @@ var hmsStats = ee.ImageCollection(projFolder + 'HMS/HMS_Stats');
 var getSmokeTSChart = function(year,hmsCat) {
   
   var smokeExtYr = hmsExtent.filter(ee.Filter.eq('Year',year));
-  var smokeExtHistYrs = hmsExtent.filter(ee.Filter.gte('Year',sYear+1))
+  var smokeExtHistYrs = hmsExtent
+    .filter(ee.Filter.gte('Year',sYear+1))
     .filter(ee.Filter.lte('Year',eYear));
   
   var nDay = ee.Date.fromYMD(year,12,31)
@@ -339,7 +340,8 @@ var getSmokeTSChart = function(year,hmsCat) {
   smokeExt = smokeExt.filter(ee.Filter.eq('Valid',true));
   
   var smokeChart = ui.Chart.feature.byFeature(smokeExt,'Date',['Current','Historical','Historical25','Historical75'])
-    .setSeriesNames(['Current Year','Average (2006-2022)','p25 (2006-2022)','p75 (2006-2022)'])
+    .setSeriesNames(['Current Year', 'Average (2006-' + eYear + ')',
+      'p25 (2006-' + eYear + ')', 'p75 (2006-' + eYear + ')'])
     .setOptions({
       title: 'Smoke Plumes',
       titleTextStyle: {fontSize: '13.5'},

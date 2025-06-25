@@ -13,7 +13,6 @@ setwd(homeDir)
 
 xYears <- 2005:2025
 currYear <- 2025
-forceCheckURL <- T
 
 hms_text <- "https://www.ospo.noaa.gov/products/land/smoke/"
 hms_text_loc <- "https://www.ospo.noaa.gov/"
