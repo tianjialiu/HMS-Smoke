@@ -3,7 +3,7 @@ NOAA's Hazard Mapping System ([HMS](https://www.ospo.noaa.gov/Products/land/hms.
 
 The [HMS Smoke Explorer](https://globalfires.earthengine.app/view/hms-smoke) allows end-users to visualize NOAA's Hazard Mapping System (HMS) smoke and fire products, MODIS aerosol optical depth, and GOES-East/West RGB imagery. Since 2005, NOAA analysts have been inspecting satellite imagery (e.g. GOES, MODIS, VIIRS) and manually outlining the extent of smoke across North America, classified into three density categories: light, medium, and heavy, to produce the HMS smoke product. A corresponding HMS fire product includes active fire detections from multiple satellites/sensors (e.g., MODIS, VIIRS, GOES, AVHRR) with quality control by the analysts.
 
-The latest date available in the HMS Smoke Explorer is June 24, 2025.
+The latest date available in the HMS Smoke Explorer is September 5, 2025.
 
 ![banner image](https://github.com/tianjialiu/HMS-Smoke/blob/main/docs/imgs/HMSSmokeExplorer.png)
 
@@ -24,7 +24,7 @@ The HMS Smoke Explorer covers the time range of the HMS Smoke Product (2005/08-p
 | [MODIS Burned Area](https://developers.google.com/earth-engine/datasets/catalog/MODIS_061_MCD64A1) | 2000/10-present | 500 m |
 | [MODIS MAIAC Aerosol Optical Depth (AOD)](https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD19A2_GRANULES) | 2000/02-present | 1 km |
 | [ECMWF/CAMS AOD, PM<sub>2.5</sub>](https://developers.google.com/earth-engine/datasets/catalog/ECMWF_CAMS_NRT) | 2016/06-present | 0.4° |
-| [GOES-16/East](https://developers.google.com/earth-engine/datasets/tags/goes-16) | 2017/07-present | 2 km |
+| [GOES-16/East](https://developers.google.com/earth-engine/datasets/tags/goes-16) | 2017/07-2025/04 | 2 km |
 | [GOES-17/West](https://developers.google.com/earth-engine/datasets/tags/goes-17) | 2018/12-2023/01 | 2 km |
 | [GOES-18/West](https://developers.google.com/earth-engine/datasets/tags/goes-18) | 2022/10-present | 2 km |
 | [GOES-19/East](https://developers.google.com/earth-engine/datasets/tags/goes-19) | 2025/04-present | 2 km |
@@ -112,7 +112,7 @@ Number of HMS polygons in each year, and how many are invalid after processing i
 2022 | 21906 | 21904 | 2 | 0 |
 2023 | 20303 | 20302 | 1 | 0 |
 2024 | 12544 | 12541 | 3 | 0 |
-2025 | 9633 | 9631 | 2 | 0 |
+2025 | 15554 | 15552 | 2 | 0 |
 
 Missing Dates
 ```
@@ -170,7 +170,7 @@ Number of HMS active fires from various satellites and missing days since April 
 2022 | 365 | 3570747 | 80920 | 1834499 | 1655328 | 0 | 0 | 0 |
 2023 | 365 | 8196303 | 0 | 5036609 | 3159694 | 0 | 0 | 0 |
 2024 | 366 | 8434632 | 0 | 4773062 | 3661570 | 0 | 0 | 0 |
-2025 | 173 | 4239478 | 0 | 2148885 | 2090593 | 0 | 0 | 0 |
+2025 | 246 | 7057504 | 0 | 4473276 | 2584228 | 0 | 0 | 0 |
 
 Missing Dates or Corrupt Files
 ```
