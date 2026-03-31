@@ -3,14 +3,16 @@
 # ----------------------------------------------------
 # unzip HMS fire product zip files
 # ====================================================
-# last updated: June 2, 2025
+# last updated: March 31, 2026
 # Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
-source("~/Projects/HMS_ISD/HMS/scripts/globalParams.R")
+source("~/Projects/HMS_ISD/HMS/R/globalParams.R")
 homeDir <- file.path(projDir,"Fire_Points/")
 
-xYears <- 2005:2025
 inMode <- "unzip"
+
+# global variables in globalParams.R
+#xYears <- 2026
 
 if (inMode == "unzip") {
   for (inYear in xYears) {
@@ -34,6 +36,14 @@ if (inMode == "unzip") {
     }
     timestamp(prefix=paste(inYear,"##------ "))
   }
+  
+  setwd(file.path(homeDir,"Annual_Bundles"))
+  zippedFiles <- dir(".","*\\.zip")
+  if (length(zippedFiles) > 0) {
+    for (inFile in zippedFiles) {unzip(inFile,overwrite=T)}
+  }
+  file.remove(dir(".","*\\.zip"))
+  timestamp(prefix="Annual ##------ ")
 }
 
 if (inMode == "diag") {

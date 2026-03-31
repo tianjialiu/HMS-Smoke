@@ -9,7 +9,7 @@ var maiac = ee.ImageCollection("MODIS/006/MCD19A2_GRANULES"),
 // *****************************************************************
 /*
 // @author Tianjia Liu (embrslab@gmail.com)
-// Last updated: June 25, 2025
+// Last updated: March 31, 2026
 
 // Purpose: visualize HMS smoke with MODIS active fires
 // and aerosol optical depth
@@ -26,9 +26,9 @@ var colPal = require('users/embrslab/packages:colorPalette.js');
 var projFolder = 'projects/GlobalFires/';
 
 var sYear = 2005;
-var eYear = 2024;
+var eYear = 2025;
 var nrtYear = eYear + 1;
-var nrtEnd = '2025-06-24';
+var nrtEnd = '2026-03-29';
 
 var region = ee.Geometry.Rectangle([-180,0,0,90],null,false);
 maiac = maiac.filterBounds(region);
@@ -457,7 +457,7 @@ var infoPanel = function() {
   
   var dataLabel = ui.Label('[Data/Info]', {margin: '3px 5px 3px 8px', fontSize: '12.5px', color: '#5886E8'}, 'https://www.ospo.noaa.gov/Products/land/hms.html');
   var codeLabel = ui.Label('[Code]', {margin: '3px 5px 3px 3px', fontSize: '12.5px', color: '#5886E8'}, 'https://github.com/tianjialiu/HMS-Smoke');
-  var noaaLabel = ui.Label('[NOAA HRRR-Smoke]', {margin: '3px 5px 3px 3px', fontSize: '12.5px', color: '#5886E8'}, 'https://hwp-viz.gsd.esrl.noaa.gov/smoke/index.html');
+  var noaaLabel = ui.Label('[NOAA RAP-Smoke]', {margin: '3px 5px 3px 3px', fontSize: '12.5px', color: '#5886E8'}, 'https://rapidrefresh.noaa.gov/RAPsmoke/');
   var epaLabel = ui.Label('[EPA AirNow]', {margin: '3px 5px 3px 3px', fontSize: '12.5px', color: '#5886E8'}, 'https://fire.airnow.gov/#');
   
   var introDetails = ui.Label('',{margin: '5px 20px 0px 8px',fontSize: '12px', color: '#999'});
@@ -522,7 +522,7 @@ var viewPanel = function() {
       if (selected == 'By Day') {setTimePanel('By Day')}
       if (selected == 'By Year') {setTimePanel('By Year')}
       if (selected == 'Summary') {
-        timeModePanel.add(ui.Label('Note that 2005 & 2025 are not included in the summary due to partial data availability.',
+        timeModePanel.add(ui.Label('Note that 2005 & 2026 are not included in the summary due to partial data availability.',
           {fontSize: '13px', margin: '5px 8px 8px 8px', color: '#777'}));
       }
     });
@@ -537,10 +537,10 @@ var getViewMode = function(viewPanel) {
 // Time panel
 var setTimePanel = function(viewMode) {
   
-  var dateInfoLabel = ui.Label('Filter HMS smoke and MODIS active fires by date. Note that 2005 & 2025 have partial data availability.',
+  var dateInfoLabel = ui.Label('Filter HMS smoke and MODIS active fires by date. Note that 2005 & 2026 have partial data availability.',
     {fontSize: '13px', margin: '10px 8px 5px 8px', color: '#777'});
   
-  var updateLabel = ui.Label('Date Range: (2005-08-05 to ' + nrtEnd +')',
+  var updateLabel = ui.Label('Available Date Range: (2005-08-05 to ' + nrtEnd +')',
     {margin: '-3px 20px 5px 8px', fontSize: '12.5px', color: '#777'});
     
   var yearLabel = ui.Label('2) Select Year:', {fontSize: '14.5px', margin: '8px 8px 8px 8px'});

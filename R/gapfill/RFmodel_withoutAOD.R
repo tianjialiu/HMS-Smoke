@@ -5,11 +5,11 @@
 # gapfill unspecified densities, without using AOD
 # as a predictor
 # ====================================================
-# last updated: August 26, 2024
+# last updated: March 31, 2026
 # Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
-library("randomForest"); library("caTools")
-source("~/Projects/HMS_ISD/HMS/scripts/globalParams.R")
+library("randomForest"); library("caTools"); library("readr")
+source("~/Projects/HMS_ISD/HMS/R/globalParams.R")
 homeDir <- file.path(projDir,"HMS_gapfill")
 setwd(homeDir)
 
@@ -52,13 +52,16 @@ for (i in 1:n) {
   accuracy[i,] <- tapply(1:3,1:3,function(x) cm[x,][x]/sum(cm[x,]))
   pred_fill[i,] <- predict(rf, newdata=hmsAODall_fill[,-1])
   
-  write_rds(varImp[i,],paste0("HMS_gapfill_noAOD_temp/rf_importance_noAOD_",sprintf("%03d",i)))
-  write_rds(accuracy[i,],paste0("HMS_gapfill_noAOD_temp/rf_test_accuracy_noAOD_",sprintf("%03d",i)))
-  write_rds(pred_fill[i,],paste0("HMS_gapfill_noAOD_temp/rf_pred_density_noAOD_",sprintf("%03d",i)))
+  # save as rds files
+  outputFolder <- "HMS_gapfill_noAOD_temp/"
+  write_rds(varImp[i,],paste0(outputFolder,"rf_importance_noAOD_",sprintf("%03d",i),".rds"))
+  write_rds(accuracy[i,],paste0(outputFolder,"rf_test_accuracy_noAOD_",sprintf("%03d",i),".rds"))
+  write_rds(pred_fill[i,],paste0(outputFolder,"rf_pred_density_noAOD_",sprintf("%03d",i),".rds"))
   
   timestamp(prefix=paste(i,": ##------ "))
 }
 
+# save final file
 colnames(varImp) <- var_names[-1]
 colnames(accuracy) <- c("Light","Medium","Heavy")
 

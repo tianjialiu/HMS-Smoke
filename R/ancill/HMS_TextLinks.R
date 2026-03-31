@@ -4,14 +4,14 @@
 # combine all links to HMS text descriptions
 # into a single table
 # ====================================================
-# last updated: June 2, 2025
+# last updated: March 31, 2026
 # Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
-source("~/Projects/HMS_ISD/HMS/scripts/globalParams.R")
+source("~/Projects/HMS_ISD/HMS/R/globalParams.R")
 homeDir <- file.path(projDir,"Smoke_Text/")
 setwd(homeDir)
 
-xYears <- 2005:2025
+xYears <- 2005:currYear
 
 hmsLinksAll <- list()
 for (iYear in seq_along(xYears)) {

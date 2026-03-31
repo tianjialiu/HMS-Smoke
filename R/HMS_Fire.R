@@ -3,21 +3,15 @@
 # -------------------------------------------------------
 # process daily HMS fire shapefiles and combine by year
 # =======================================================
-# last updated: June 2, 2025
+# last updated: March 31, 2026
 # Tianjia Liu (embrslab@gmail.com)
 # -------------------------------------------------------
-source("~/Projects/HMS_ISD/HMS/scripts/globalParams.R")
+source("~/Projects/HMS_ISD/HMS/R/globalParams.R")
 homeDir <- file.path(projDir,"Fire_Points/")
 setwd(homeDir)
 
-xYears <- 2003:2025
-
-nDaysLeap <- c(31,29,31,30,31,30,31,31,30,31,30,31)
-nDaysNonLeap <- c(31,28,31,30,31,30,31,31,30,31,30,31)
-
-yj_hhmm <- function(inTime) {
-  as.POSIXct(inTime,format="%Y%j %H%M",tz="UTC")
-}
+# global variables in globalParams.R
+#xYears <- 2026
 
 shp_rowNames <- c("Lon","Lat","Year","Month","Day","JDay",
                   "YearSat","MonthSat","DaySat","JDaySat","HHMMSat",

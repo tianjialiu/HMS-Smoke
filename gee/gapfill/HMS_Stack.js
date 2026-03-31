@@ -11,7 +11,7 @@
 var projFolder = 'projects/GlobalFires/';
 
 var sYear = 2005;
-var eYear = 2022;
+var eYear = 2025;
 
 var getStackVal = function(inHMS) {
   var jday = inHMS.getNumber('JDay');

@@ -4,19 +4,20 @@
 # export a table of all HMS data as a CSV file
 # for the gap-filling random forest model
 # ====================================================
-# last updated: August 26, 2024
+# last updated: March 31, 2026
 # Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
 library("randomForest"); library("caTools")
-source("~/Projects/HMS_ISD/HMS/scripts/globalParams.R")
+source("~/Projects/HMS_ISD/HMS/R/globalParams.R")
 
-xYears <- 2005:2022
+xYears <- 2005:2025
 
 hmsAODall <- list()
 for (iYear in 1:length(xYears)) {
   inYear <- xYears[iYear]
   hmsStack <- read.csv(paste0("HMS_Stack/HMS_",inYear,"_Stack.csv"))
-  hmsPoly <- st_read(paste0("Smoke_Polygons/processed/HMS_",inYear,".shp"),quiet=T)
+  hmsPoly <- st_read(paste0("Smoke_Polygons/processed/HMS_",inYear,".shp"),quiet=T) |>
+    st_make_valid()
 
   xMonths <- 1:12
   if (inYear == 2005) {xMonths <- 8:12}

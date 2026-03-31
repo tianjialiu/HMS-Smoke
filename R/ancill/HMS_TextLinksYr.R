@@ -4,15 +4,16 @@
 # retrieve links to HMS text descriptions, 
 # combine into a yearly table
 # ====================================================
-# last updated: June 2, 2025
+# last updated: March 31, 2026
 # Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
 source("~/Projects/HMS_ISD/HMS/R/globalParams.R")
 homeDir <- file.path(projDir,"Smoke_Text/")
 setwd(homeDir)
 
-xYears <- 2005:2025
-currYear <- 2025
+# global variables in globalParams.R
+#xYears <- 2026
+#currYear <- 2026
 
 hms_text <- "https://www.ospo.noaa.gov/products/land/smoke/"
 hms_text_loc <- "https://www.ospo.noaa.gov/"
@@ -94,14 +95,16 @@ for (inYear in xYears) {
   hmsHHMMStr <- paste(substr(hmsFileNames,8,11),"UTC")
   hmsLinksHtml <- paste0("<a target='_blank' href=",hmsLinks,">",hmsFileNames,"</a>")
   
-  hmsDates <- tapply(seq_along(hmsLinks),seq_along(hmsLinks),
-                     function(iLink) {
-                       readTry <- try(read_html(hmsLinks[iLink]))
-                       if (!"try-error" %in% class(readTry)) {
-                         hmsDate <- getTime(hmsLinks[iLink])
-                       } else {hmsDate <- rep(-1,3)}
-                       return(hmsDate)
-                     })
+  hmsDates <- list()
+  for (iLink in 1:length(hmsLinks)) {
+    closeAllConnections()
+    readTry <- try(read_html(hmsLinks[iLink]),silent=T)
+    
+    hmsDates[[iLink]] <- rep(-1,3)
+    if (!"try-error" %in% class(readTry)) {
+      hmsDates[[iLink]] <- getTime(hmsLinks[iLink])
+    }
+  }
   hmsDates <- do.call(rbind,hmsDates)
   
   validLinks <- which(as.numeric(hmsDates[,1]) > -1)
@@ -118,7 +121,6 @@ for (inYear in xYears) {
                            Name=hmsFileNames,
                            HtmlLink=hmsLinksHtml,Link=hmsLinks,
                            dateQA=dateQA)
-  
   
   hmsLinksYr <- hmsLinksYr[validLinks,]
   hmsLinksYr <- hmsLinksYr[with(hmsLinksYr,order(Year,Month,Day)),]

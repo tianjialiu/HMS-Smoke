@@ -13,7 +13,7 @@ var maiac = ee.ImageCollection("MODIS/006/MCD19A2_GRANULES");
 var projFolder = 'projects/GlobalFires/';
 
 var sYear = 2005;
-var eYear = 2022;
+var eYear = 2025;
 
 var crs = maiac.first().select('Optical_Depth_055').projection();
 var scale = crs.nominalScale();
@@ -44,7 +44,7 @@ var getAOD = function(inHMS) {
 
 for (var inYear = sYear; inYear <= eYear; inYear++) {
   for (var inMonth = 1; inMonth <= 12; inMonth++) {
-    var hmsYr = ee.FeatureCollection(projFolder + 'HMS/Smoke_Polygons/HMS_' + inYear)
+    var hmsYr = ee.FeatureCollection(projFolder + 'HMS/Smoke_Polygons_Raw/HMS_' + inYear)
       .filter(ee.Filter.eq('Month',inMonth))
       .sort('ID');
       

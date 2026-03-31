@@ -3,21 +3,15 @@
 # ----------------------------------------------------
 # process daily HMS shapefiles and combine by year
 # ====================================================
-# last updated: June 2, 2025
+# last updated: March 31, 2026
 # Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
-source("~/Projects/HMS_ISD/HMS/scripts/globalParams.R")
+source("~/Projects/HMS_ISD/HMS/R/globalParams.R")
 homeDir <- file.path(projDir,"Smoke_Polygons/")
 setwd(homeDir)
 
-xYears <- 2003:2025
-
-nDaysLeap <- c(31,29,31,30,31,30,31,31,30,31,30,31)
-nDaysNonLeap <- c(31,28,31,30,31,30,31,31,30,31,30,31)
-
-yj_hhmm <- function(inTime) {
-  as.POSIXct(inTime,format="%Y%j %H%M",tz="UTC")
-}
+# global variables in globalParams.R
+#xYears <- 2005:2026
 
 shp_rowNames <- c("ID","Year","Month","Day","JDay",
                   "Start","End","StSec","EndSec",
@@ -90,7 +84,10 @@ for (inYear in xYears) {
           # invalid: 3 = linestring, 4 = point / empty, 5 = crossed edges
           inShp$QAFlag <- NA
           
-          # remove invalid geometries: unclosed rings, edges crossing each other, too few vertices 
+          # geometry validity
+          validMessages <- suppressWarnings(st_is_valid(inShp,reason=T))
+          
+          # remove/fix invalid geometries: unclosed rings, edges crossing each other, too few vertices 
           for (iShp in 1:nrow(inShp)) {
             inShp$QAFlag[iShp] <- 4
             iShpCoords <- st_coordinates(inShp[iShp,])[,1:2]
@@ -129,24 +126,44 @@ for (inYear in xYears) {
                 }
               }
             }
-          }
-          inShp <- st_make_valid(inShp)
-          inShp$QAFlag[str_starts(st_is_valid(inShp,reason=T),"Edge")] <- 5
-          
-          # Is the geometry a multipolygon?
-          inShp$IsMulti <- 'N'
-          for (iShp in 1:nrow(inShp)) {
-            if (length(inShp[iShp,]$geometry[[1]]) > 1) {
-              inShp$IsMulti[iShp] <- 'Y'
+            
+            # fix crossed edges
+            if (str_starts(validMessages[iShp],"Edge")) {
+              inShp$QAFlag[iShp] <- 5
+              
+              uncrossedPoly <- inShp[iShp,] |>
+                st_transform(6933) |>
+                st_boundary() |>
+                st_node() |>
+                st_union() |>
+                st_polygonize() |>
+                st_collection_extract("POLYGON") |>
+                suppressWarnings() 
+              
+              uncrossedPoly <- uncrossedPoly[as.numeric(st_area(uncrossedPoly))>1,] %>%
+                st_union() %>%
+                st_make_valid() %>%
+                st_transform(4326)
+              
+              inShp$geometry[iShp] <- uncrossedPoly
             }
           }
           
-          shpMat[[counter]] <- as.data.frame(inShp)[,shp_rowNames[-which(shp_rowNames=="Area")]]
+          # Is the geometry a multipolygon?
+          inShp$IsMulti <- "N"
+          for (iShp in 1:nrow(inShp)) {
+            if (length(inShp[iShp,]$geometry[[1]]) > 1) {
+              inShp$IsMulti[iShp] <- "Y"
+            }
+          }
           
-          inShp <- inShp[st_is_valid(inShp),]
+          # save dataframe of all polygons
+          shpMat[[counter]] <- as.data.frame(inShp)[,shp_rowNames[-which(shp_rowNames=="Area")]]
           
           # Projection
           inShp <- st_set_crs(inShp, 4326)
+          inShp <- st_make_valid(inShp)
+          inShp <- inShp[st_is_valid(inShp),]
           
           # Area (sq. km)
           inShp$Area <- as.numeric(st_area(inShp)/1e6)
@@ -165,7 +182,7 @@ for (inYear in xYears) {
     }
   }
   
-  shpYr <- do.call(rbind,shpYr)
+  shpYr <- do.call(rbind,shpYr) |> st_make_valid()
   shpTally <- do.call(rbind,shpTally)
   shpMat <- do.call(rbind,shpMat)
   

@@ -5,10 +5,10 @@
 # with the gapfilled density and related flags
 # (only relevant for 2005-2010)
 # ====================================================
-# last updated: August 26, 2024
+# last updated: March 31, 2026
 # Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
-source("~/Projects/HMS_ISD/HMS/scripts/globalParams.R")
+source("~/Projects/HMS_ISD/HMS/R/globalParams.R")
 
 xYears <- 2005:2010
 

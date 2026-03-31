@@ -3,7 +3,7 @@ NOAA's Hazard Mapping System ([HMS](https://www.ospo.noaa.gov/Products/land/hms.
 
 The [HMS Smoke Explorer](https://globalfires.earthengine.app/view/hms-smoke) allows end-users to visualize NOAA's Hazard Mapping System (HMS) smoke and fire products, MODIS aerosol optical depth, and GOES-East/West RGB imagery. Since 2005, NOAA analysts have been inspecting satellite imagery (e.g. GOES, MODIS, VIIRS) and manually outlining the extent of smoke across North America, classified into three density categories: light, medium, and heavy, to produce the HMS smoke product. A corresponding HMS fire product includes active fire detections from multiple satellites/sensors (e.g., MODIS, VIIRS, GOES, AVHRR) with quality control by the analysts.
 
-The latest date available in the HMS Smoke Explorer is January 21, 2025.
+The latest date available in the HMS Smoke Explorer on Google Earth Engine (GEE) is March 29, 2026.
 
 ![banner image](https://github.com/tianjialiu/HMS-Smoke/blob/main/docs/imgs/HMSSmokeExplorer.png)
 
@@ -30,7 +30,7 @@ The HMS Smoke Explorer covers the time range of the HMS Smoke Product (2005/08-p
 | [GOES-19/East](https://developers.google.com/earth-engine/datasets/tags/goes-19) | 2025/04-present | 2 km |
 
 ### HMS on Google Earth Engine
-The processed HMS smoke product can be used for analysis on Google Earth Engine (EE) and downloaded as yearly files.
+The processed HMS smoke product can be used for analysis on Google Earth Engine and downloaded as yearly files. Note that 2005-2010 includes gap-filled smoke densities (`fillFlag` > 0).
 ```
 // read HMS smoke polygons and active fires by year
 var inYear = 2020;
@@ -72,18 +72,19 @@ IsMulti | Is the polygon a multipolygon? | 'Y' or 'N'
 fillFlag* | Flag on gap-filling smoke density | 0 = no gapfill, 1 = gapfill (model with AOD), 2 = gapfill (model without AOD)
 fillConf* | Confidence on gap-filled density based on predicted model outcomes from bootstrapping (polygons that did not need gap-filling are automatically labeled with a value of 1) | 0-1
 
-&ast; only relevant for 2005-2010, so HMS files for only those years have these columns on EE
+&ast; only relevant for 2005-2010, so HMS files for only those years have these columns on GEE
 
 Notes:
 * The start and end time represent the time bounds of the satellite images used to draw the HMS polygons, not the actual persistence duration of the smoke plume
 * In the tool, duration is used to estimate the annual contribution of each smoke density category at a particular location
-* For QA = 1, out-of-bounds coordinates with y > 90 or y < -90 are removed (removes some anomalous coordinates), x < -180 is forced to be x = -180 as this may lead to disfigured polygons on EE
+* For QA = 1, out-of-bounds coordinates with y > 90 or y < -90 are removed (removes some anomalous coordinates), x < -180 is forced to be x = -180 as this may lead to disfigured polygons on GEE
 * For QA = 2, the first coordinate is repeated at the end of the list of coordinates to close the polygon ring
 
 ### Caveats
 * The HMS smoke product represents smoke as seen from satellites. In some places, smoke may be aloft and may not affect surface air quality. This is particularly true for light smoke.
 * Use caution when assessing trends in smoke using the HMS smoke product outside of CONUS. Note the lower spatial coverage in earlier years, which can be seen from the artificial boundaries in annual aggregates.
-* The HMS 'Duration' is calculated from the start and end times of satellite images used to outline the smoke. Thus, it is not an estimate of the true smoke duration. HMS analysts outline smoke using only daytime satellite imagery and generally analyze heavy smoke twice per day in the morning and late afternoon.
+* The HMS 'Duration' is calculated from the start and end times of satellite images used to outline the smoke. Thus, it is not an estimate of the true smoke duration. The HMS smoke polygon represents the maximum extent of smoke during this duration.
+* HMS analysts outline smoke using only daytime satellite imagery. Smoke plumes are added throughout the day as new satellite imagery becomes available, though analysts generally analyze larger smoke plumes only twice per day in the morning and late afternoon.
 * HMS smoke polygons in 2005-2007, 2009, and some in 2008 and 2010 are not classified into smoke density classes (light, medium, heavy). We used random forest modeling to assign densities to all such polygons.
 * HMS smoke polygons with bad geometries and throws an error in R (i.e. drawn as lines rather than polygons, edges crossing edges) have been removed.
 * GOES-16/East became operational on December 18, 2017, GOES-17/West on February 12, 2019, GOES-18/West on January 4, 2023 (replacing GOES-17/West), and GOES-19/West on April 7, 2025 (replacing GOES-16/East). Note these dates when selecting the GOES RGB images.
@@ -93,27 +94,27 @@ Number of HMS polygons in each year, and how many are invalid after processing i
 | Year | Total | Valid | Invalid | Gapfill | 
 | :--- | :--- | :--- | :--- | :--- | 
 2005 | 6296 | 6291 | 5 | 6291 |
-2006 | 15453 | 15441 | 12 | 15441 |
-2007 | 19881 | 19870 | 11 | 19612 |
-2008 | 23203 | 23186 | 17 | 5073 |
-2009 | 23517 | 23480 | 37 | 23332 |
-2010 | 27241 | 27215 | 26 | 7437 |
-2011 | 33721 | 33704 | 17 | 0 |
-2012 | 27972 | 27964 | 8 | 0 |
-2013 | 23162 | 23143 | 19 | 0 |
-2014 | 18565 | 18557 | 8 | 0 |
-2015 | 16356 | 16344 | 12 | 0 |
-2016 | 21280 | 21268 | 12 | 0 |
+2006 | 15453 | 15448 | 5 | 15448 |
+2007 | 19881 | 19876 | 5 | 19618 |
+2008 | 23203 | 23190 | 13 | 5074 |
+2009 | 23517 | 23495 | 22 | 23347 |
+2010 | 27241 | 27223 | 18 | 7440 |
+2011 | 33721 | 33714 | 7 | 0 |
+2012 | 27972 | 27970 | 2 | 0 |
+2013 | 23162 | 23149 | 13 | 0 |
+2014 | 18565 | 18561 | 4 | 0 |
+2015 | 16356 | 16346 | 10 | 0 |
+2016 | 21280 | 21269 | 11 | 0 |
 2017 | 25843 | 25841 | 2 | 0 |
 2018 | 41331 | 41320 | 11 | 0 |
 2019 | 42945 | 42934 | 11 | 0 |
 2020 | 45440 | 45438 | 2 | 0 |
-2021 | 27573 | 27572 | 1 | 0 |
-2022 | 21906 | 21904 | 2 | 0 |
+2021 | 27573 | 27573 | 0 | 0 |
+2022 | 21906 | 21906 | 0 | 0 |
 2023 | 20303 | 20302 | 1 | 0 |
-2024 | 12544 | 12541 | 3 | 0 |
-2025 | 24175 | 24172 | 2 | 0 |
-2026 | 2004 | 2003 | 1 | 0 |
+2024 | 12544 | 12542 | 2 | 0 |
+2025 | 24175 | 24173 | 2 | 0 |
+2026 | 10546 | 10546 | 0 | 0 |
 
 Missing Dates
 ```
@@ -171,12 +172,16 @@ Number of HMS active fires from various satellites and missing days since April 
 2022 | 365 | 3570747 | 80920 | 1834499 | 1655328 | 0 | 0 | 0 |
 2023 | 365 | 8196303 | 0 | 5036609 | 3159694 | 0 | 0 | 0 |
 2024 | 366 | 8434632 | 0 | 4773062 | 3661570 | 0 | 0 | 0 |
-2025 | 363 | 7980464 | 0 | 5076245 | 2904219 | 0 | 0 | 0 |
-2026 | 21 | 166368 | 0 | 94977 | 71391 | 0 | 0 | 0 |
+2025 | 365 | 8040406 | 0 | 5076245 | 2938782 | 0 | 0 | 0 |
+2026 | 78 | 980484 | 0 | 466469 | 514015 | 0 | 0 | 0 |
 
 Missing Dates or Corrupt Files
 ```
-20030501,20030502,20030503,20030504,20030505,20030506,20030507,20030508,20030509,20030510,20030511,20030512,20030513,20030514,20030515,20030516,20030517,20030518,20030519,20030520,20030521,20030522,20030523,20030524,20030525,20030526,20030527,20030528,20030529,20030530,20030531,20030601,20030602,20030603,20030604,20030605,20030606,20030607,20030608,20030609,20030610,20030611,20030612,20030613,20030614,20030615,20030711,20030731,20030830,20030831,20030905,20030907,20030914,20031102,20031210,20031215,20040225,20040402,20040624,20041209,20050511,20050624,20050626,20050703,20050706,20060327,20060401,20060714,20060715,20061104,20070331,20070821,20090130,20090408,20140705,20150602,20150820,20160306,20161108,20161112,20161209,20170427,20170531,20170601,20170622,20170718,20180501,20181220,20181230,20190225,20190709,20190710,20250508,20250511
+20030501,20030502,20030503,20030504,20030505,20030506,20030507,20030508,20030509,20030510,20030511,20030512,20030513,20030514,20030515,20030516,20030517,20030518,20030519,20030520,20030521,20030522,20030523,20030524,20030525,20030526,20030527,20030528,20030529,20030530,20030531,20030601,20030602,20030603,20030604,20030605,20030606,20030607,20030608,20030609,20030610,20030611,20030612,20030613,20030614,20030615,20030711,20030731,20030830,20030831,20030905,20030907,20030914,20031102,20031210,20031215,20040225,20040402,20040624,20041209,20050511,20050624,20050626,20050703,20050706,20060327,20060401,20060714,20060715,20061104,20070331,20070821,20090130,20090408,20140705,20150602,20150820,20160306,20161108,20161112,20161209,20170427,20170531,20170601,20170622,20170718,20180501,20181220,20181230,20190225,20190709,20190710
+```
+The HMS annual bundle files can be used to backfill dates with corrupt zip files (`ancill/HMS_Fire_fill.R`):
+```
+20250508,20250511
 ```
 
 ### Basic Code for Processing HMS Products
@@ -202,12 +207,13 @@ HMS/
 3. Retrieve HMS smoke text description links as .txt and output as yearly .csv tables in `HMS/Smoke_Text/` using `ancill/HMS_TextLinksYr.R`; combine the .csv files into a single file, `HMS/Smoke_Text/HMS_SmokeText.csv`, using `ancill/HMS_TextLinks.R`
 
 ### Gap-filling Unspecified Densities
-We used random forest classification to assign densities (light, medium, or heavy) to polygons with unspecified densities from 2005-2010. This procedure is described in [Liu et al. (2024, IJWF)](https://doi.org/10.31223/X51963). Note that the code has recently been updated to use `sf` instead of `rgdal`, and additional processing has been done to fix more bad geometries. The code workflow uses EE to generate some input data for the random forest model (`HMS_Stack.js`,`HMS_AOD.js`). The rest of the workflow is in R with `RFmodel_prepare.R` to output a CSV table of data for all HMS polygons from 2005-2022, `RFmodel_withAOD.R` and `RFmodel_withoutAOD.R` to run the random forest classification models, `RFmodel_export.R` to output another CSV table now with the gap-filled densities, and finally `HMS_gapfill_shp.R` to rewrite HMS files from 2005-2010 with the gap-filled densities and associated flags.
+We used random forest classification to assign densities (light, medium, or heavy) to polygons with unspecified densities from 2005-2010. This procedure is described in [Liu et al. (2024, IJWF)](https://doi.org/10.31223/X51963). Note that the code has been updated to use `sf` instead of `rgdal`, and additional processing has been done to fix more bad geometries; more years are added to the model. The code workflow uses GEE to generate some input data for the random forest model (`HMS_Stack.js`,`HMS_AOD.js`). The rest of the workflow is in R with `gapfill/RFmodel_prepare.R` to output a CSV table of data for all HMS polygons from 2005-2022, `gapfill/RFmodel_withAOD.R` and `gapfill/RFmodel_withoutAOD.R` to run the random forest classification models, `gapfill/RFmodel_export.R` to output another CSV table now with the gap-filled densities, and finally `gapfill/HMS_gapfill_shp.R` to write new HMS files from 2005-2010 with the gap-filled densities and associated flags. The gap-filling method is computationally intensive and takes around 1 week to complete in GEE and R, largely due to computing AOD for each polygon in GEE.
 
 ### Updates
-* June 2025: fixed text replacement bug in dates for `HMS_TextLinksYr.R` that omitted links for August reports; updated descriptions for smoke text description and smoke extent panels on EE app; fixed label in historical smoke timeseries and typo in equation of the GOES green band in EE app
+* March 2026: fixed additional HMS smoke polygons with crossed edges, added `ancill/HMS_Fire_fill.R` for backfilling dates with corrupt daily files, added download option for HMS annual bundles in R scripts
+* June 2025: fixed text replacement bug in dates for `HMS_TextLinksYr.R` that omitted links for August reports; updated descriptions for smoke text description and smoke extent panels on the GEE app; fixed label in historical smoke timeseries and typo in equation of the GOES green band in the GEE app
 * May 2025: updated `UI_HMS_Smoke.js` with GOES-19/East imagery and active fires
-* April 2025: updated `HMS_TextLinksYr.R` using the [NOAA OSPO archive](https://www.ospo.noaa.gov/products/land/smoke/); the FTP server used previously is no longer available
+* April 2025: updated `ancill/HMS_TextLinksYr.R` using the [NOAA OSPO archive](https://www.ospo.noaa.gov/products/land/smoke/); the FTP server used previously is no longer available
 * October 2024: fixed missing HMS fire points in 2007
 * August 2024: replaced FIRMS with the HMS fire product for the active fires layer on the app, update MODIS burned area layer from Collection 6 to 6.1
 * July 2024: added VIIRS active fires to app; there seems to be some issues with recent active fire images in the Earth Engine / FIRMS dataset
