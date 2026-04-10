@@ -9,7 +9,7 @@ var maiac = ee.ImageCollection("MODIS/006/MCD19A2_GRANULES"),
 // *****************************************************************
 /*
 // @author Tianjia Liu (embrslab@gmail.com)
-// Last updated: March 31, 2026
+// Last updated: April 9, 2026
 
 // Purpose: visualize HMS smoke with MODIS active fires
 // and aerosol optical depth
@@ -28,7 +28,7 @@ var projFolder = 'projects/GlobalFires/';
 var sYear = 2005;
 var eYear = 2025;
 var nrtYear = eYear + 1;
-var nrtEnd = '2026-03-29';
+var nrtEnd = '2026-04-08';
 
 var region = ee.Geometry.Rectangle([-180,0,0,90],null,false);
 maiac = maiac.filterBounds(region);
@@ -53,6 +53,15 @@ var getHMS = function(year,month,day) {
   var hmsDayHeavy = applyHMScolor(hmsDay,'Heavy',colPal_smoke[2]);
   
   return hmsDayLight.merge(hmsDayMedium).merge(hmsDayHeavy);
+};
+
+var getHMS_outlines = function(year,month,day) {
+  var hmsYr = ee.FeatureCollection(projFolder + 'HMS/Smoke_Polygons/HMS_' + year);
+  
+  var hmsDay = hmsYr.filter(ee.Filter.eq('Month',month))
+    .filter(ee.Filter.eq('Day',day));
+  
+  return ee.Image().paint(hmsDay,1,0);
 };
 
 var getFire = function(year,month,day) {
@@ -452,7 +461,7 @@ var outputRegion = ee.Geometry.Rectangle([-180,0,0,90],null,false);
 var infoPanel = function() {
   var hmsToolLabel = ui.Label('HMS Smoke Explorer', {margin: '12px 0px 0px 8px', fontWeight: 'bold', fontSize: '24px', border: '1px solid black', padding: '5px'});
   
-  var infoLabel = ui.Label('NOAA\'s Hazard Mapping System (HMS) smoke product maps the extent of fire-related smoke plumes across the U.S. and adjacent areas.',
+  var infoLabel = ui.Label('NOAA\'s Hazard Mapping System (HMS) smoke product maps the extent of fire-related smoke plumes across North America.',
     {margin: '8px 20px 2px 8px', fontSize: '12.5px', color: '#777'});
   
   var dataLabel = ui.Label('[Data/Info]', {margin: '3px 5px 3px 8px', fontSize: '12.5px', color: '#5886E8'}, 'https://www.ospo.noaa.gov/Products/land/hms.html');
@@ -598,11 +607,11 @@ var setTimePanel = function(viewMode) {
 
   
     var satLabel = ui.Label('4) Select Satellite:', {fontSize: '14.5px', margin: '8px 8px 8px 8px'});
-      var satSelect = ui.Select({
-        items: ['GOES-East','GOES-West'],
-        value: 'GOES-East',
-        style: {margin: '3px 50px 5px 8px', stretch: 'horizontal'}
-      });
+    var satSelect = ui.Select({
+      items: ['GOES-East','GOES-West'],
+      value: 'GOES-East',
+      style: {margin: '3px 50px 5px 8px', stretch: 'horizontal'}
+    });
     
     var satPanel = ui.Panel([satLabel, satSelect], ui.Panel.Layout.Flow('horizontal'), {stretch: 'horizontal'});
 
@@ -611,7 +620,6 @@ var setTimePanel = function(viewMode) {
 
   return timeModePanel.add(timePanel);
 };
-
 
 var getDate = function(timeModePanel) {
   var inDate = timeModePanel.widgets().get(0).widgets().get(2).widgets().get(1).getValue();
@@ -631,6 +639,71 @@ var getSat = function(timeModePanel) {
   var satName = timeModePanel.widgets().get(0).widgets().get(4).widgets().get(1).getValue();
 
   return satName;
+};
+
+var setZoomPanel = function(map,lon,lat,zoom) {
+  
+  var pointLabel = ui.Label('Map View Settings', {fontSize: '14.5px', margin: '8px 8px 3px 8px', color: '#0070BF'});
+  var coordsLabel = ui.Label('Pan the interactive map or enter lon/lat coordinates (center of map) and zoom level below to lock in the current map view. The zoom level ranges from 0 (fully zoomed out) to 22 (fully zoomed in).',
+    {margin: '3px 8px 6px 8px', fontSize: '12.5px', color: '#777'});
+
+  var lonLabel = ui.Label('Lon (x):', {padding: '3px 0px 0px 0px', fontSize: '14.5px'});
+  var latLabel = ui.Label('Lat (y):', {padding: '3px 0px 0px 0px', fontSize: '14.5px'});
+  var zoomLevelLabel = ui.Label('Zoom Level:', {padding: '3px 0px 0px 0px', fontSize: '14.5px'});
+  
+  var lonBox = ui.Textbox({value: lon, style: {stretch: 'horizontal'}});
+  var latBox = ui.Textbox({value: lat, style: {stretch: 'horizontal'}});
+  var zoomLevelBox = ui.Textbox({value: zoom, style: {width: '58px'}});
+  
+  var coordsPanel = ui.Panel([
+    coordsLabel, ui.Panel([lonLabel, lonBox, latLabel, latBox], ui.Panel.Layout.Flow('horizontal'),
+      {stretch: 'horizontal', margin: '-5px 0px 0px 0px'})
+    ]);
+  
+  var zoomLevelPanel = ui.Panel([
+    ui.Panel([zoomLevelLabel, zoomLevelBox], ui.Panel.Layout.Flow('horizontal'),
+      {stretch: 'horizontal', margin: '-2px 0px 0px 0px'})
+    ]);
+
+  map.onChangeBounds(function(coords) {
+    lonBox.setValue(coords.lon);
+    latBox.setValue(coords.lat);
+    zoomLevelBox.setValue(map.getZoom());
+  });
+  
+  var recenterButton = ui.Button({label: 'Re-center', style: {margin: '4px 4px 0px 8px'}});
+  
+  recenterButton.onClick(function() {
+    map.setCenter(parseFloat(lonBox.getValue()),
+      parseFloat(latBox.getValue()),
+      parseFloat(zoomLevelBox.getValue()));
+  });
+  
+  var resetButton = ui.Button({label: 'Reset', style: {margin: '4px 0px 0px 8px'}});
+  
+  resetButton.onClick(function() {
+    map.setCenter(-97,38.5,4);
+  });
+  
+  return ui.Panel([pointLabel, coordsPanel,
+   ui.Panel([zoomLevelPanel,recenterButton,resetButton], ui.Panel.Layout.Flow('horizontal'),
+      {stretch: 'horizontal', margin: '-5px 0px 0px 0px'})]);
+};
+
+var setMapView = function(zoomPanel,map) {
+  var lon = parseFloat(zoomPanel.widgets().get(1).widgets().get(1).widgets().get(1).getValue());
+  var lat = parseFloat(zoomPanel.widgets().get(1).widgets().get(1).widgets().get(3).getValue());
+  var zoom = parseFloat(zoomPanel.widgets().get(2).widgets().get(0).widgets().get(0).widgets().get(1).getValue());
+
+  return map.setCenter(lon,lat,zoom);
+};
+
+var getMapView = function(zoomPanel,map) {
+  var lon = parseFloat(zoomPanel.widgets().get(1).widgets().get(1).widgets().get(1).getValue());
+  var lat = parseFloat(zoomPanel.widgets().get(1).widgets().get(1).widgets().get(3).getValue());
+  var zoom = parseFloat(zoomPanel.widgets().get(2).widgets().get(0).widgets().get(0).widgets().get(1).getValue());
+
+  return {lon: lon, lat: lat, zoom: zoom};
 };
 
 // Run button
@@ -663,7 +736,7 @@ var getLayerCheck = function(map, label, value, layerPos, opacity, description, 
   legendSubtitle]);
 };
 
-var getLayerCheckSimple = function(map, label, value, layerPos, opacity) {
+var getLayerCheckSimple = function(map, label, value, layerPos, opacity, opacitySpacing) {
   var checkLayer = ui.Checkbox({label: label, value: value,  
     style: {fontWeight: 'bold', fontSize: '15px', margin: '0px 3px 5px 8px'}});
   
@@ -673,7 +746,7 @@ var getLayerCheckSimple = function(map, label, value, layerPos, opacity) {
   });
   
   var opacityLayer = ui.Slider({min: 0, max: 1, value: opacity, step: 0.01,
-    style: {margin: '1px 3px 5px 8px'}
+    style: {margin: opacitySpacing + ' 3px 5px 8px'}
   });
   
   opacityLayer.onChange(function(value) {
@@ -756,6 +829,7 @@ var getLegendContinuous = function(maxVal, colPal) {
 
 var symbol = {
   smoke: '( ⬛ )',
+  smoke_outline: '( 🔲 )',
   fire: '(️ 🔴 )'
 };
 
@@ -767,19 +841,26 @@ var getLegend = function(map) {
     widgets: [
       footDivider,
       ui.Label('️Legend',{fontWeight:'bold',fontSize:'20px',margin:'8px 3px 8px 8px'}),
-      getLayerCheck(map,symbol.smoke + ' Smoke', true, 3, 0.6,
-        'Extent and density of smoke plumes observed from satellite images (e.g. GOES, VIIRS, MODIS) by NOAA\'s HMS analysts, spatially aggregated by highest smoke density category', '6px'),
+      getLayerCheckSimple(map,symbol.smoke + ' Smoke Density', true, 3, 0.6, '2px'),
+      getLayerCheck(map,symbol.smoke_outline + ' Smoke Outlines', false, 4, 0.3,
+        'Extent and density of smoke plumes observed from satellite images (e.g., GOES, VIIRS, MODIS) by NOAA\'s HMS analysts, spatially aggregated by highest smoke density category',
+        '2px'),
       getLegendDiscrete(smokeLabels,colPal_smoke),
-      getLayerCheck(map,symbol.fire + ' Active Fires', true, 4, 0.65,
-        'Sallite-derived active fires from the HMS fire product, including detections from MODIS, VIIRS, GOES, and AVHRR', '6px'),
-      ui.Label('Aerosol Optical Depth',{fontWeight:'bold',fontSize:'16px',margin:'2px 3px 0px 8px'}),
-      ui.Label('MODIS Terra/Aqua MAIAC and ECMWF/CAMS Aerosol Optical Depth (AOD) at 550 nm',{fontSize:'13px',color:'#666',margin:'2px 3px 4px 8px'}),
-      ui.Label('Note: MAIAC AOD may not be up-to-date; CAMS AOD is available from June 21, 2016',{fontSize:'12.5px',color:'#999',margin:'0px 3px 8px 8px'}),
-      getLayerCheckSimple(map,'MAIAC', false, 1, 0.75),
-      getLayerCheckSimple(map,'CAMS', false, 2, 0.75),
+      getLayerCheck(map,symbol.fire + ' Active Fires', true, 5, 0.65,
+        'Sallite-derived active fires from the HMS fire product, including detections from MODIS, VIIRS, GOES, and AVHRR',
+        '2px'),
+      ui.Label('Aerosol Optical Depth',
+        {fontWeight:'bold',fontSize:'16px',margin:'2px 3px 0px 8px'}),
+      ui.Label('MODIS Terra/Aqua MAIAC and ECMWF/CAMS Aerosol Optical Depth (AOD) at 550 nm',
+        {fontSize:'13px',color:'#666',margin:'2px 3px 4px 8px'}),
+      ui.Label('Note: MAIAC AOD may not be up-to-date; CAMS AOD is available from June 21, 2016',
+        {fontSize:'12.5px',color:'#999',margin:'0px 3px 8px 8px'}),
+      getLayerCheckSimple(map,'MAIAC', false, 1, 0.75, '1px'),
+      getLayerCheckSimple(map,'CAMS', false, 2, 0.75, '1px'),
       getLegendContinuous(0.5,colPal.Spectral),
       getLayerCheck(map,'Surface PM2.5', false, 0, 0.55,
-        'ECMWF/CAMS daily average particulate matter (with diameter < 2.5 μm) concentrations, in μg/m³', '0px'),
+        'ECMWF/CAMS daily average particulate matter (with diameter < 2.5 μm) concentrations, in μg/m³',
+        '0px'),
       getLegendDiscrete(['Moderate (12.1 – 35.4)','Unhealthy for Sensitive Groups (35.5 – 55.4)',
           'Unhealthy (55.5 – 150.4)','Very Unhealthy (150.5 – 250.4)','Hazardous (> 250.5)'],
         ['#FEFF54','#EF8532','#EA3423','#8C1B4B','#741425'])
@@ -852,11 +933,13 @@ ui.root.add(init_panels);
 
 var infoPanel = infoPanel();
 var viewPanel = viewPanel();
+
 var timeModePanel = ui.Panel();
 setTimePanel('By Day');
+var zoomPanel = setZoomPanel(map0,-97,38.5,4);
 
 controlPanel.add(infoPanel).add(viewPanel).add(timeModePanel)
-  .add(runButton);
+  .add(zoomPanel).add(runButton);
 
 var counter = 0;
 
@@ -867,23 +950,30 @@ runButton.onClick(function() {
   mapPanel.clear();
   map0 = ui.Map(); map0.clear();
   map0.style().set({cursor:'crosshair'});
-  map0.setCenter(-97,38.5,4);
   map0.setControlVisibility({fullscreenControl: false, layerList: false});
   map0.unlisten();
   
   map1 = ui.Map(); map1.clear();
   map1.style().set({cursor:'crosshair'});
-  map1.setCenter(-97,38.5,4);
   map1.setControlVisibility({fullscreenControl: false, layerList: false});
 
-  mapPanel.add(map0);
+  var lon; var lat; var zoom;
   
+  mapPanel.add(map0);
+
   if (counter > 1) {
+    controlPanel.remove(controlPanel.widgets().get(7));
     controlPanel.remove(controlPanel.widgets().get(6));
     controlPanel.remove(controlPanel.widgets().get(5));
-    controlPanel.remove(controlPanel.widgets().get(4));
   }
-    
+  
+  var mapView = getMapView(zoomPanel);
+  
+  controlPanel.remove(controlPanel.widgets().get(3));
+  zoomPanel = setZoomPanel(map0,mapView.lon,mapView.lat,mapView.zoom);
+  controlPanel.insert(3,zoomPanel);
+  setMapView(zoomPanel,map0);
+  
   // Input parameters:
   var viewMode = getViewMode(viewPanel);
   var inYear = getYear(timeModePanel,viewMode);
@@ -908,6 +998,7 @@ runButton.onClick(function() {
     var goesFire_col = ee.ImageCollection(ee.List(goesFire_IDs.get(satName)).get(goesIdx));
 
     var hmsDay = getHMS(inYear,inMonth,inDay);
+    var hmsDay_outlines = getHMS_outlines(inYear,inMonth,inDay);
     var fireDay = getFire(inYear,inMonth,inDay);
     var aodDay_maiac = getAOD_MAIAC(inYear,inMonth,inDay,'green');
     var aodDay_cams = getCAMS(inYear,inMonth,inDay,'aod');
@@ -922,6 +1013,8 @@ runButton.onClick(function() {
       'AOD (CAMS)',false,0.75);
     map0.addLayer(hmsDay.style({styleProperty:'styleProperty',width:0.5}),{},
       'HMS Smoke',true,0.6);
+    map0.addLayer(hmsDay_outlines,{palette:['#333']},
+      'HMS Smoke Outlines',false,0.35);
     map0.addLayer(fireDay.style({color:'red',pointSize:1,width:0.7}),{},
       'Active Fires',true,0.65);
 
@@ -1182,7 +1275,7 @@ runButton.onClick(function() {
     hmsCatSelect.onChange(function(selected) {
       controlPanel.remove(tsChart);
       tsChart = getSmokeTSChart(inYear,selected);
-      controlPanel.insert(5,tsChart);
+      controlPanel.insert(6,tsChart);
     });
   }
   
