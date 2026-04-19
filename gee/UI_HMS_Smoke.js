@@ -9,7 +9,7 @@ var maiac = ee.ImageCollection("MODIS/006/MCD19A2_GRANULES"),
 // *****************************************************************
 /*
 // @author Tianjia Liu (embrslab@gmail.com)
-// Last updated: April 9, 2026
+// Last updated: April 18, 2026
 
 // Purpose: visualize HMS smoke with MODIS active fires
 // and aerosol optical depth
@@ -28,7 +28,7 @@ var projFolder = 'projects/GlobalFires/';
 var sYear = 2005;
 var eYear = 2025;
 var nrtYear = eYear + 1;
-var nrtEnd = '2026-04-08';
+var nrtEnd = '2026-04-17';
 
 var region = ee.Geometry.Rectangle([-180,0,0,90],null,false);
 maiac = maiac.filterBounds(region);
@@ -1054,7 +1054,9 @@ runButton.onClick(function() {
       
       controlPanel.remove(legendPanel);
       legendPanel = getLegend(map0);
-      controlPanel.insert(4,legendPanel);
+      controlPanel.insert(5,legendPanel);
+      
+      mapView = getMapView(zoomPanel);
       
       if (checked) {
         mapPanel.clear();
@@ -1090,6 +1092,7 @@ runButton.onClick(function() {
           goesButton
         ], ui.Panel.Layout.Flow('vertical'), {position: 'bottom-right'});
         map1.add(hrPanel);
+        map1.setCenter(mapView.lon,mapView.lat,mapView.zoom);
         
         var goesCounter = 0;
         goesButton.onClick(function() {
