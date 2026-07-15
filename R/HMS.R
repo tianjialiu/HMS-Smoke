@@ -3,7 +3,7 @@
 # ----------------------------------------------------
 # process daily HMS shapefiles and combine by year
 # ====================================================
-# last updated: March 31, 2026
+# last updated: July 14, 2026
 # Tianjia Liu (embrslab@gmail.com)
 # ----------------------------------------------------
 source("~/Projects/HMS_ISD/HMS/R/globalParams.R")
@@ -15,7 +15,8 @@ setwd(homeDir)
 
 shp_rowNames <- c("ID","Year","Month","Day","JDay",
                   "Start","End","StSec","EndSec",
-                  "Duration","Density","Satellite","Area","QAFlag","IsMulti")
+                  "Duration","Density","Satellite",
+                  "Area","QAFlag","IsMulti")
 
 for (inYear in xYears) {
   shpYr <- list(); shpTally <- list(); shpMat <- list()
@@ -45,33 +46,34 @@ for (inYear in xYears) {
             inShp$ID <- inYear*1e7+JDay*1e4+(1:nrow(inShp))
           } else {inShp$ID <- inYear*1e7+JDay*1e4+(as.numeric(inShp$ID)+1)}
           
-          stTime <- yj_hhmm(inShp$Start)
-          endTime <- yj_hhmm(inShp$End)
-          
-          inShp$Start <- as.numeric(do.call(rbind,strsplit(as.character(inShp$Start)," "))[,2])
-          inShp$End <- as.numeric(do.call(rbind,strsplit(as.character(inShp$End)," "))[,2])
-          
-          # Date Y-M-D
+          # Date Y-M-D, local
           inShp$Year <- inYear
           inShp$Month <- inMonth
           inShp$Day <- inDay
           inShp$JDay <- JDay
           
-          inShp$Duration <- as.numeric(difftime(endTime,stTime,units="mins"))/60
+          # Y-M-D HHMM, UTC
+          stTime <- yj_hhmm(inShp$Start)
+          endTime <- yj_hhmm(inShp$End)
           
+          # in seconds since 1970-01-01
           stTimeAbs <- as.POSIXct("1970-01-01 00:00",tz="UTC")
-          stTime <- as.POSIXct(paste0(inYear*1e7+JDay*1e4+inShp$Start),tz="UTC",format="%Y%j%H%M")
           inShp$StSec <- as.numeric(difftime(stTime,stTimeAbs,units="secs"))
-          inShp$EndSec <- inShp$StSec+inShp$Duration*60*60
+          inShp$EndSec <- as.numeric(difftime(endTime,stTimeAbs,units="secs"))
           
-          inShp$Duration <- inShp$Duration + 0.25
+          # HHMM
+          inShp$Start <- as.numeric(do.call(rbind,strsplit(as.character(inShp$Start)," "))[,2])
+          inShp$End <- as.numeric(do.call(rbind,strsplit(as.character(inShp$End)," "))[,2])
+          
+          # Duration, in minutes, with a 15-min buffer
+          inShp$Duration <- as.numeric(difftime(endTime,stTime,units="mins"))/60 + 0.25
           
           # Density
           if (inShp$Density[1] == "NA") {
             inShp$Density <- "Unspecified"
           }
           
-          # Satellite
+          # Satellite source
           if (inShp$Satellite[1] == "NA") {
             inShp$Satellite <- "Unspecified"
           }
